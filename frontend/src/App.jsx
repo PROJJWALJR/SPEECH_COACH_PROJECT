@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const API = "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const MAX_SECONDS = 300; // 5 minutes
 
 // ── Colour helpers ──────────────────────────────────────────────────────────
