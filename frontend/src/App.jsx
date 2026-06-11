@@ -76,7 +76,6 @@ function Card({ title, children, accent = "#0ea5e9" }) {
 function WaveViz({ stream }) {
   const canvasRef = useRef(null);
   const rafRef    = useRef(null);
-  const analyserRef = useRef(null);
 
   useEffect(() => {
     if (!stream) return;
@@ -85,7 +84,6 @@ function WaveViz({ stream }) {
     const an  = ctx.createAnalyser();
     an.fftSize = 256;
     src.connect(an);
-    analyserRef.current = an;
 
     const data = new Uint8Array(an.frequencyBinCount);
     const draw = () => {
@@ -114,6 +112,123 @@ function WaveViz({ stream }) {
     style={{ width: "100%", height: 60, borderRadius: 8, background: "#0a0f1e" }} />;
 }
 
+// ── User Feedback ─────────────────────────────────────────────────────────────
+const FEEDBACK_OPTIONS = [
+  { label: "👍 Good",    value: "good",    bg: "#14532d", active: "#4ade80", text: "#86efac" },
+  { label: "😐 Average", value: "average", bg: "#1e3a5f", active: "#60a5fa", text: "#93c5fd" },
+  { label: "👎 Bad",     value: "bad",     bg: "#4c1d1d", active: "#f87171", text: "#fca5a5" },
+  { label: "💀 Worst",   value: "worst",   bg: "#3b0a0a", active: "#dc2626", text: "#fca5a5" },
+];
+
+function FeedbackPanel({ feedback, onFeedback }) {
+  return (
+    <Card title="🗳 Rate This Assessment" accent="#f59e0b">
+      <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 16px" }}>
+        How accurate was this analysis? Your rating helps improve the model.
+      </p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {FEEDBACK_OPTIONS.map((opt) => {
+          const isActive = feedback === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onFeedback(opt.value)}
+              style={{
+                background: isActive ? opt.active : opt.bg,
+                color: isActive ? "#0f172a" : opt.text,
+                border: `2px solid ${isActive ? opt.active : "transparent"}`,
+                borderRadius: 10, padding: "10px 20px", fontSize: 13,
+                fontWeight: isActive ? 800 : 600, cursor: "pointer",
+                transition: "all .2s", transform: isActive ? "scale(1.06)" : "scale(1)",
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      {feedback && (
+        <div style={{ marginTop: 14, fontSize: 12, color: "#4ade80" }}>
+          ✅ Feedback recorded: <strong>{feedback}</strong>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ── Performance Metrics ───────────────────────────────────────────────────────
+function PerfMetrics({ performance, system_metrics }) {
+  if (!performance) return null;
+  const { total_ms, whisper_ms, llm_ms, breakdown } = performance;
+  const ram = system_metrics?.after;
+  const ramDelta = system_metrics?.ram_delta_mb;
+
+  const fmt = (ms) => ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+
+  return (
+    <Card title="⚡ Analysis Metrics" accent="#0ea5e9">
+      {/* Timing */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Total Time",  value: fmt(total_ms),   color: "#0ea5e9" },
+          { label: "Whisper",     value: fmt(whisper_ms), color: "#a78bfa" },
+          { label: "LLM",         value: fmt(llm_ms),     color: "#f59e0b" },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ background: "#0a0f1e", borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
+            <div style={{ fontSize: 22, fontFamily: "'DM Mono', monospace", color, fontWeight: 700 }}>{value}</div>
+            <div style={{ fontSize: 11, color: "#475569", marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Time breakdown bar */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Time Breakdown</div>
+        <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", height: 20 }}>
+          <div style={{ width: `${breakdown?.whisper_percent}%`, background: "#a78bfa",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 10, color: "#0f172a", fontWeight: 700 }}>
+            {breakdown?.whisper_percent}%
+          </div>
+          <div style={{ width: `${breakdown?.llm_percent}%`, background: "#f59e0b",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 10, color: "#0f172a", fontWeight: 700 }}>
+            {breakdown?.llm_percent}%
+          </div>
+          <div style={{ flex: 1, background: "#1e293b",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 10, color: "#475569" }}>
+            other
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+          <span style={{ fontSize: 11, color: "#a78bfa" }}>■ Whisper (transcription)</span>
+          <span style={{ fontSize: 11, color: "#f59e0b" }}>■ LLM (analysis)</span>
+        </div>
+      </div>
+
+      {/* RAM / CPU */}
+      {ram && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {[
+            { label: "CPU Usage",      value: `${ram.cpu_percent}%`,           color: ram.cpu_percent > 80 ? "#f87171" : "#4ade80" },
+            { label: "Process RAM",    value: `${ram.process_ram_mb} MB`,       color: "#60a5fa" },
+            { label: "RAM Δ",          value: `${ramDelta > 0 ? "+" : ""}${ramDelta} MB`, color: ramDelta > 20 ? "#fb923c" : "#94a3b8" },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ background: "#0a0f1e", borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontFamily: "'DM Mono', monospace", color, fontWeight: 700 }}>{value}</div>
+              <div style={{ fontSize: 11, color: "#475569", marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ fontSize: 10, color: "#334155", marginTop: 12 }}>
+        ℹ️ {ram?.note || "CPU-only server (no GPU on Render free tier)"}
+      </div>
+    </Card>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [recording, setRecording]   = useState(false);
@@ -124,20 +239,20 @@ export default function App() {
   const [loading,   setLoading]     = useState(false);
   const [result,    setResult]      = useState(null);
   const [error,     setError]       = useState(null);
-  const [phase,     setPhase]       = useState("idle"); // idle | recording | done | analysing
+  const [phase,     setPhase]       = useState("idle"); // idle | recording | done | analysing | result
+  const [feedback,  setFeedback]    = useState(null);   // good | average | bad | worst
+  const [uploadName, setUploadName] = useState(null);   // filename of uploaded audio
 
   const mediaRef   = useRef(null);
   const chunksRef  = useRef([]);
   const timerRef   = useRef(null);
+  const fileInputRef = useRef(null);
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   const startRecording = async () => {
-    setError(null);
-    setResult(null);
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setElapsed(0);
+    setError(null); setResult(null); setAudioBlob(null);
+    setAudioUrl(null); setElapsed(0); setUploadName(null);
     chunksRef.current = [];
 
     try {
@@ -177,13 +292,26 @@ export default function App() {
     setRecording(false);
   };
 
+  // ── Audio upload handler ──────────────────────────────────────────────────
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null); setResult(null); setElapsed(0);
+    setAudioBlob(file);
+    setAudioUrl(URL.createObjectURL(file));
+    setUploadName(file.name);
+    setPhase("done");
+  };
+
   const analyse = async () => {
     if (!audioBlob) return;
     setLoading(true);
     setError(null);
+    setFeedback(null);
     setPhase("analysing");
     const fd = new FormData();
-    fd.append("audio", audioBlob, "recording.webm");
+    const filename = uploadName || "recording.webm";
+    fd.append("audio", audioBlob, filename);
     try {
       const res = await fetch(`${API}/transcribe-and-assess`, { method: "POST", body: fd });
       if (!res.ok) { const t = await res.text(); throw new Error(t); }
@@ -201,10 +329,11 @@ export default function App() {
   const reset = () => {
     setResult(null); setAudioBlob(null); setAudioUrl(null);
     setElapsed(0); setError(null); setPhase("idle");
+    setFeedback(null); setUploadName(null);
   };
 
   // ── render ────────────────────────────────────────────────────────────────
-  const { analysis, pace, filler_words, transcript, duration_seconds } = result || {};
+  const { analysis, pace, filler_words, transcript, duration_seconds, performance, system_metrics } = result || {};
   const a = analysis || {};
 
   return (
@@ -222,16 +351,16 @@ export default function App() {
             Speech Coach
           </h1>
           <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,.75)", fontSize: 14 }}>
-            Record up to 5 minutes · Get deep analysis on 7+ dimensions
+            Record up to 5 minutes · Upload audio · Get deep analysis on 7+ dimensions
           </p>
         </div>
       </div>
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 20px" }}>
 
-        {/* ── Record panel ── */}
+        {/* ── Record / Upload panel ── */}
         {(phase === "idle" || phase === "recording" || phase === "done") && (
-          <Card title="🎙 Record Your Speech" accent="#0ea5e9">
+          <Card title="🎙 Record or Upload Audio" accent="#0ea5e9">
             {phase === "recording" && (
               <>
                 <WaveViz stream={stream} />
@@ -255,7 +384,7 @@ export default function App() {
               <div style={{ textAlign: "center", padding: "24px 0" }}>
                 <div style={{ fontSize: 64, marginBottom: 12 }}>🎤</div>
                 <p style={{ color: "#64748b", fontSize: 14, margin: "0 0 20px" }}>
-                  Click to start recording. Speak naturally — imagine you're presenting to an audience.
+                  Record live or upload an existing audio file (.webm, .mp3, .wav, .m4a).
                 </p>
               </div>
             )}
@@ -263,17 +392,32 @@ export default function App() {
             {phase === "done" && audioUrl && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ color: "#4ade80", textAlign: "center", marginBottom: 12, fontSize: 14 }}>
-                  ✅ Recording saved — {fmt(elapsed)}
+                  {uploadName
+                    ? `✅ Uploaded: ${uploadName}`
+                    : `✅ Recording saved — ${fmt(elapsed)}`}
                 </div>
                 <audio src={audioUrl} controls style={{ width: "100%", borderRadius: 8 }} />
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: phase === "recording" ? 20 : 0 }}>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: phase === "recording" ? 20 : 0, flexWrap: "wrap" }}>
               {phase === "idle" && (
-                <button onClick={startRecording} style={btnStyle("#0ea5e9")}>
-                  ● Start Recording
-                </button>
+                <>
+                  <button onClick={startRecording} style={btnStyle("#0ea5e9")}>
+                    ● Start Recording
+                  </button>
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".webm,.mp3,.wav,.m4a,audio/*"
+                    style={{ display: "none" }}
+                    onChange={handleUpload}
+                  />
+                  <button onClick={() => fileInputRef.current?.click()} style={btnStyle("#475569")}>
+                    📂 Upload Audio
+                  </button>
+                </>
               )}
               {phase === "recording" && (
                 <button onClick={stopRecording} style={btnStyle("#f87171")}>
@@ -282,8 +426,8 @@ export default function App() {
               )}
               {phase === "done" && (
                 <>
-                  <button onClick={startRecording} style={btnStyle("#64748b")}>
-                    ↺ Re-record
+                  <button onClick={reset} style={btnStyle("#64748b")}>
+                    ↺ Start Over
                   </button>
                   <button onClick={analyse} style={btnStyle("#6366f1")}>
                     🔍 Analyse Speech
@@ -300,7 +444,7 @@ export default function App() {
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <div style={{ fontSize: 48, animation: "spin 1.5s linear infinite", display: "inline-block" }}>⚙️</div>
               <div style={{ marginTop: 16, color: "#94a3b8", fontSize: 14 }}>
-                Transcribing with Whisper then running deep analysis via Claude…
+                Transcribing with Whisper · Analysing with LLaMA…
               </div>
             </div>
           </Card>
@@ -437,6 +581,12 @@ export default function App() {
                 ))}
               </Card>
             </div>
+
+            {/* ── NEW: Performance metrics ── */}
+            <PerfMetrics performance={performance} system_metrics={system_metrics} />
+
+            {/* ── NEW: User feedback ── */}
+            <FeedbackPanel feedback={feedback} onFeedback={setFeedback} />
 
             {/* Transcript */}
             <Card title="📄 Transcript" accent="#334155">
