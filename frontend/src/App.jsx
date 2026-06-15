@@ -4,30 +4,28 @@ import { supabase } from "./supabaseClient";
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const MAX_SECONDS = 300;
 
-// ── Palette (from provided gradient sheet) ────────────────────────────────────
+// ── Palette (purple monochrome) ───────────────────────────────────────────────
 const P = {
-  coral:   "#FF5A57",
-  magenta: "#E02F75",
-  purple:  "#6700A3",
-  navy:    "#1B2062",
-  deep:    "#050C38",
-  pink:    "#FCCBF0",
-  white:   "#F0E6FF",
-  muted:   "#9B8DB8",
-  card:    "#0D1147",
-  border:  "#2A1F5C",
+  deep:    "#49225B",   // darkest — sidebar, page bg
+  dark:    "#6E3482",   // cards, borders
+  mid:     "#A56ABD",   // accents, active states, highlights
+  light:   "#E7DBEF",   // muted text, subtle elements
+  white:   "#F5EBFA",   // headings, primary text
+  card:    "#3A1A4A",   // card background (slightly darker than deep)
+  border:  "#5C2D72",   // borders (between deep and dark)
+  muted:   "#C4A8D4",   // secondary text
 };
 
-const GRAD = `linear-gradient(135deg, ${P.coral}, ${P.magenta}, ${P.purple})`;
-const GRAD2 = `linear-gradient(135deg, ${P.magenta}, ${P.purple}, ${P.deep})`;
-const GRAD_BG = `linear-gradient(160deg, ${P.deep} 0%, ${P.navy} 60%, #0A0C2E 100%)`;
+const GRAD  = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.mid})`;
+const GRAD2 = `linear-gradient(135deg, ${P.dark}, ${P.mid})`;
+const GRAD_BG = `linear-gradient(160deg, #2A1038 0%, ${P.deep} 50%, #3D1A50 100%)`;
 
-// ── Score colour (remapped to palette) ───────────────────────────────────────
+// ── Score colour (purple monochrome scale) ────────────────────────────────────
 const scoreColor = (n) => {
-  if (n >= 80) return "#A855F7";
-  if (n >= 60) return P.magenta;
-  if (n >= 40) return P.coral;
-  return "#f87171";
+  if (n >= 80) return P.mid;
+  if (n >= 60) return P.dark;
+  if (n >= 40) return "#8B4FA8";
+  return P.border;
 };
 
 const archetypeEmoji = {
@@ -67,7 +65,7 @@ function Bar({ label, score, tip }) {
       </div>
       <div style={{background:P.border, borderRadius:999, height:7, overflow:"hidden"}}>
         <div style={{width:`${score}%`, height:"100%",
-          background:`linear-gradient(90deg, ${P.coral}, ${P.magenta})`,
+          background:`linear-gradient(90deg, ${P.mid}, ${P.dark})`,
           borderRadius:999, transition:"width 1s ease"}}/>
       </div>
       {tip && <div style={{fontSize:11, color:P.muted, marginTop:5, lineHeight:1.5, fontFamily:"Nunito, sans-serif"}}>💡 {tip}</div>}
@@ -79,7 +77,7 @@ function Bar({ label, score, tip }) {
 function Chip({ text, color }) {
   return (
     <span style={{
-      background: color || `linear-gradient(135deg, ${P.purple}55, ${P.magenta}33)`,
+      background: color || `linear-gradient(135deg, ${P.deep}55, ${P.dark}33)`,
       color: P.pink, fontSize:11, padding:"4px 12px",
       borderRadius:999, display:"inline-block", marginRight:6, marginBottom:6,
       border:`1px solid ${P.border}`, fontFamily:"Nunito, sans-serif", fontWeight:600,
@@ -93,7 +91,7 @@ function Card({ title, children, accent }) {
     <div style={{
       background: P.card, border:`1px solid ${P.border}`, borderRadius:18,
       padding:24, marginBottom:20,
-      borderTop:`3px solid ${accent || P.magenta}`,
+      borderTop:`3px solid ${accent || P.dark}`,
     }}>
       <h3 style={{margin:"0 0 16px", color:P.white, fontSize:15, letterSpacing:.5, fontFamily:"Nunito, sans-serif", fontWeight:800}}>{title}</h3>
       {children}
@@ -112,7 +110,7 @@ function GradBtn({ onClick, children, grad, style: extra = {} }) {
         color:"#fff", border:"none", borderRadius:12,
         padding:"13px 30px", fontSize:14, fontWeight:800, cursor:"pointer",
         fontFamily:"Nunito, sans-serif", letterSpacing:.6,
-        boxShadow: hov ? `0 8px 32px ${P.magenta}66` : `0 4px 16px ${P.purple}44`,
+        boxShadow: hov ? `0 8px 32px ${P.dark}66` : `0 4px 16px ${P.deep}44`,
         transform: hov ? "translateY(-2px)" : "translateY(0)",
         transition:"all .2s",
         ...extra,
@@ -154,15 +152,15 @@ function WaveViz({ stream }) {
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
 const FEEDBACK_OPTIONS = [
-  { label:"👍 GOOD",    value:"good",    from:P.purple,  to:"#4ade80" },
-  { label:"😐 AVERAGE", value:"average", from:P.navy,    to:P.purple  },
-  { label:"👎 BAD",     value:"bad",     from:"#7f1d1d", to:P.coral   },
-  { label:"💀 WORST",   value:"worst",   from:"#3b0a0a", to:"#dc2626" },
+  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:"#A56ABD" },
+  { label:"😐 AVERAGE", value:"average", from:P.card,    to:P.deep  },
+  { label:"👎 BAD",     value:"bad",     from:"#49225B", to:P.mid   },
+  { label:"💀 WORST",   value:"worst",   from:"#2A1038", to:"#49225B" },
 ];
 
 function FeedbackPanel({ feedback, onFeedback }) {
   return (
-    <Card title="🗳 RATE THIS ASSESSMENT" accent={P.coral}>
+    <Card title="🗳 RATE THIS ASSESSMENT" accent={P.mid}>
       <p style={{fontSize:12, color:P.muted, margin:"0 0 16px", fontFamily:"Nunito, sans-serif"}}>
         HOW ACCURATE WAS THIS ANALYSIS?
       </p>
@@ -182,7 +180,7 @@ function FeedbackPanel({ feedback, onFeedback }) {
         })}
       </div>
       {feedback && (
-        <div style={{marginTop:14, fontSize:12, color:"#A855F7", fontFamily:"Nunito, sans-serif", fontWeight:700}}>
+        <div style={{marginTop:14, fontSize:12, color:"#A56ABD", fontFamily:"Nunito, sans-serif", fontWeight:700}}>
           ✅ FEEDBACK RECORDED: {feedback.toUpperCase()}
         </div>
       )}
@@ -198,12 +196,12 @@ function PerfMetrics({ performance, system_metrics }) {
   const ramDelta = system_metrics?.ram_delta_mb;
   const fmt = (ms) => ms >= 1000 ? `${(ms/1000).toFixed(1)}s` : `${ms}ms`;
   return (
-    <Card title="⚡ ANALYSIS METRICS" accent={P.purple}>
+    <Card title="⚡ ANALYSIS METRICS" accent={P.deep}>
       <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20}}>
         {[
           {label:"TOTAL TIME", value:fmt(total_ms),   color:P.pink},
-          {label:"WHISPER",    value:fmt(whisper_ms), color:"#A855F7"},
-          {label:"LLM",        value:fmt(llm_ms),     color:P.coral},
+          {label:"WHISPER",    value:fmt(whisper_ms), color:"#A56ABD"},
+          {label:"LLM",        value:fmt(llm_ms),     color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
             <div style={{fontSize:22, fontFamily:"Nunito, sans-serif", color, fontWeight:800}}>{value}</div>
@@ -214,11 +212,11 @@ function PerfMetrics({ performance, system_metrics }) {
       <div style={{marginBottom:20}}>
         <div style={{fontSize:10, color:P.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:1, fontFamily:"Nunito, sans-serif"}}>TIME BREAKDOWN</div>
         <div style={{display:"flex", borderRadius:8, overflow:"hidden", height:22}}>
-          <div style={{width:`${breakdown?.whisper_percent}%`, background:`linear-gradient(90deg,${P.purple},${P.magenta})`,
+          <div style={{width:`${breakdown?.whisper_percent}%`, background:`linear-gradient(90deg,${P.deep},${P.dark})`,
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:800, fontFamily:"Nunito, sans-serif"}}>
             {breakdown?.whisper_percent}%
           </div>
-          <div style={{width:`${breakdown?.llm_percent}%`, background:`linear-gradient(90deg,${P.coral},${P.magenta})`,
+          <div style={{width:`${breakdown?.llm_percent}%`, background:`linear-gradient(90deg,${P.mid},${P.dark})`,
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:800, fontFamily:"Nunito, sans-serif"}}>
             {breakdown?.llm_percent}%
           </div>
@@ -226,16 +224,16 @@ function PerfMetrics({ performance, system_metrics }) {
             justifyContent:"center", fontSize:10, color:P.muted, fontFamily:"Nunito, sans-serif"}}>OTHER</div>
         </div>
         <div style={{display:"flex", gap:16, marginTop:6}}>
-          <span style={{fontSize:11, color:P.purple, fontFamily:"Nunito, sans-serif"}}>■ WHISPER</span>
-          <span style={{fontSize:11, color:P.coral, fontFamily:"Nunito, sans-serif"}}>■ LLM</span>
+          <span style={{fontSize:11, color:P.deep, fontFamily:"Nunito, sans-serif"}}>■ WHISPER</span>
+          <span style={{fontSize:11, color:P.mid, fontFamily:"Nunito, sans-serif"}}>■ LLM</span>
         </div>
       </div>
       {ram && (
         <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12}}>
           {[
-            {label:"CPU USAGE",   value:`${ram.cpu_percent}%`,      color: ram.cpu_percent > 80 ? P.coral : "#A855F7"},
+            {label:"CPU USAGE",   value:`${ram.cpu_percent}%`,      color: ram.cpu_percent > 80 ? P.mid : "#A56ABD"},
             {label:"PROCESS RAM", value:`${ram.process_ram_mb} MB`, color:P.pink},
-            {label:"RAM Δ",       value:`${ramDelta>0?"+":""}${ramDelta} MB`, color:ramDelta>20?P.coral:P.muted},
+            {label:"RAM Δ",       value:`${ramDelta>0?"+":""}${ramDelta} MB`, color:ramDelta>20?P.mid:P.muted},
           ].map(({label,value,color}) => (
             <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
               <div style={{fontSize:18, fontFamily:"Nunito, sans-serif", color, fontWeight:800}}>{value}</div>
@@ -250,7 +248,7 @@ function PerfMetrics({ performance, system_metrics }) {
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
-function Sparkline({ data, color="#E02F75", width=200, height=50 }) {
+function Sparkline({ data, color="#A56ABD", width=200, height=50 }) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
@@ -297,8 +295,8 @@ function Dashboard() {
   );
 
   if (error) return (
-    <div style={{background:"#3f1010", border:`1px solid ${P.coral}`, borderRadius:12,
-      padding:16, color:"#fca5a5", fontSize:13, fontFamily:"Nunito, sans-serif"}}>⚠️ {error}</div>
+    <div style={{background:"#2A1038", border:`1px solid ${P.mid}`, borderRadius:12,
+      padding:16, color:"#E7DBEF", fontSize:13, fontFamily:"Nunito, sans-serif"}}>⚠️ {error}</div>
   );
 
   if (sessions.length === 0) return (
@@ -327,8 +325,8 @@ function Dashboard() {
         {[
           {label:"SESSIONS",      value:sessions.length,        color:P.pink},
           {label:"AVG SCORE",     value:avg("overall_score"),   color:scoreColor(avg("overall_score"))},
-          {label:"BEST SCORE",    value:best,                   color:"#A855F7"},
-          {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.coral},
+          {label:"BEST SCORE",    value:best,                   color:"#A56ABD"},
+          {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.card, border:`1px solid ${P.border}`,
             borderRadius:14, padding:16, textAlign:"center"}}>
@@ -338,12 +336,12 @@ function Dashboard() {
         ))}
       </div>
 
-      <Card title="📈 SCORE TRENDS" accent={P.purple}>
+      <Card title="📈 SCORE TRENDS" accent={P.deep}>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20}}>
           {[
-            {label:"OVERALL SCORE", data:scores,     color:P.magenta},
-            {label:"GRAMMAR",       data:grammarArr, color:P.purple},
-            {label:"CONFIDENCE",    data:confArr,    color:P.coral},
+            {label:"OVERALL SCORE", data:scores,     color:P.dark},
+            {label:"GRAMMAR",       data:grammarArr, color:P.deep},
+            {label:"CONFIDENCE",    data:confArr,    color:P.mid},
             {label:"VOCABULARY",    data:vocabArr,   color:P.pink},
           ].map(({label,data,color}) => (
             <div key={label} style={{background:P.deep, borderRadius:12, padding:16, border:`1px solid ${P.border}`}}>
@@ -363,13 +361,13 @@ function Dashboard() {
       </Card>
 
       {Object.keys(feedbackCounts).length > 0 && (
-        <Card title="🗳 FEEDBACK DISTRIBUTION" accent={P.coral}>
+        <Card title="🗳 FEEDBACK DISTRIBUTION" accent={P.mid}>
           <div style={{display:"flex", gap:12, flexWrap:"wrap"}}>
             {["good","average","bad","worst"].map((k) => {
               const count = feedbackCounts[k]||0;
               const total = sessions.filter(s=>s.user_feedback).length;
               const pct   = Math.round((count/total)*100)||0;
-              const colors = {good:"#A855F7", average:P.purple, bad:P.coral, worst:"#dc2626"};
+              const colors = {good:"#A56ABD", average:P.deep, bad:P.mid, worst:"#49225B"};
               return (
                 <div key={k} style={{background:P.deep, borderRadius:12, padding:"14px 20px",
                   textAlign:"center", flex:1, minWidth:80, border:`1px solid ${P.border}`}}>
@@ -383,7 +381,7 @@ function Dashboard() {
         </Card>
       )}
 
-      <Card title="🗂 SESSION HISTORY" accent={P.magenta}>
+      <Card title="🗂 SESSION HISTORY" accent={P.dark}>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"Nunito, sans-serif"}}>
             <thead>
@@ -406,11 +404,11 @@ function Dashboard() {
                     <span style={{color:scoreColor(s.overall_score), fontWeight:800}}>{s.overall_score}</span>
                   </td>
                   <td style={{padding:"10px 12px", color:P.white}}>{s.pace_wpm}</td>
-                  <td style={{padding:"10px 12px", color:s.filler_total>5?P.coral:P.muted}}>{s.filler_total}</td>
+                  <td style={{padding:"10px 12px", color:s.filler_total>5?P.mid:P.muted}}>{s.filler_total}</td>
                   <td style={{padding:"10px 12px", color:P.pink}}>
                     {archetypeEmoji[s.voice_archetype]||""} {s.voice_archetype||"—"}
                   </td>
-                  <td style={{padding:"10px 12px", color:P.coral, whiteSpace:"nowrap"}}>
+                  <td style={{padding:"10px 12px", color:P.mid, whiteSpace:"nowrap"}}>
                     {s.analysis_total_ms>=1000?`${(s.analysis_total_ms/1000).toFixed(1)}s`:`${s.analysis_total_ms}ms`}
                   </td>
                   <td style={{padding:"10px 12px"}}>
@@ -591,8 +589,8 @@ export default function App() {
               <button key={id} onClick={()=>{setTab(id);setSideOpen(false);}} style={{
                 display:"flex", alignItems:"center", gap:12, width:"100%",
                 padding:"12px 16px", borderRadius:12, border:"none", cursor:"pointer",
-                background: active ? `linear-gradient(135deg,${P.magenta}33,${P.purple}33)` : "transparent",
-                borderLeft: active ? `3px solid ${P.magenta}` : "3px solid transparent",
+                background: active ? `linear-gradient(135deg,${P.dark}33,${P.deep}33)` : "transparent",
+                borderLeft: active ? `3px solid ${P.dark}` : "3px solid transparent",
                 color: active ? P.white : P.muted,
                 fontFamily:"Nunito, sans-serif", fontWeight:800, fontSize:12,
                 letterSpacing:1, marginBottom:4, transition:"all .2s",
@@ -632,7 +630,7 @@ export default function App() {
         {tab==="coach" && (
           <>
             {(phase==="idle"||phase==="recording"||phase==="done") && (
-              <Card title="🎙 RECORD OR UPLOAD AUDIO" accent={P.magenta}>
+              <Card title="🎙 RECORD OR UPLOAD AUDIO" accent={P.dark}>
                 {phase==="recording" && (
                   <>
                     <WaveViz stream={stream}/>
@@ -689,13 +687,13 @@ export default function App() {
                     </>
                   )}
                   {phase==="recording" && (
-                    <GradBtn onClick={stopRecording} grad={`linear-gradient(135deg,#7f1d1d,${P.coral})`}>
+                    <GradBtn onClick={stopRecording} grad={`linear-gradient(135deg,#49225B,${P.mid})`}>
                       ■ STOP RECORDING
                     </GradBtn>
                   )}
                   {phase==="done" && (
                     <>
-                      <GradBtn onClick={reset} grad={`linear-gradient(135deg,${P.navy},${P.purple})`}>
+                      <GradBtn onClick={reset} grad={`linear-gradient(135deg,${P.card},${P.deep})`}>
                         ↺ START OVER
                       </GradBtn>
                       <GradBtn onClick={analyse}>🔍 ANALYSE SPEECH</GradBtn>
@@ -706,7 +704,7 @@ export default function App() {
             )}
 
             {phase==="analysing" && (
-              <Card title="ANALYSING YOUR SPEECH…" accent={P.purple}>
+              <Card title="ANALYSING YOUR SPEECH…" accent={P.deep}>
                 <div style={{textAlign:"center", padding:"48px 0"}}>
                   <div style={{fontSize:52, animation:"spin 1.5s linear infinite", display:"inline-block"}}>⚙️</div>
                   <div style={{marginTop:16, color:P.muted, fontSize:13, letterSpacing:2, fontWeight:700}}>
@@ -717,15 +715,15 @@ export default function App() {
             )}
 
             {error && (
-              <div style={{background:"#3f1010", border:`1px solid ${P.coral}`, borderRadius:14,
-                padding:16, marginBottom:20, color:"#fca5a5", fontSize:13, fontWeight:700, letterSpacing:.5}}>
+              <div style={{background:"#2A1038", border:`1px solid ${P.mid}`, borderRadius:14,
+                padding:16, marginBottom:20, color:"#E7DBEF", fontSize:13, fontWeight:700, letterSpacing:.5}}>
                 ⚠️ {error}
               </div>
             )}
 
             {result && phase==="result" && (
               <>
-                <Card title="📊 OVERALL SCORE" accent={P.purple}>
+                <Card title="📊 OVERALL SCORE" accent={P.deep}>
                   <div style={{display:"flex", gap:24, flexWrap:"wrap", justifyContent:"center", marginBottom:20}}>
                     <Gauge value={a.overall_score??0} label="OVERALL" size={130}/>
                     <Gauge value={a.grammar?.score??0} label="GRAMMAR"/>
@@ -736,7 +734,7 @@ export default function App() {
                   <p style={{color:P.muted, fontSize:13, lineHeight:1.8, margin:0}}>{a.summary}</p>
                 </Card>
 
-                <Card title="⏱ PACE & FILLER WORDS" accent={P.coral}>
+                <Card title="⏱ PACE & FILLER WORDS" accent={P.mid}>
                   <div style={{display:"flex", gap:24, flexWrap:"wrap"}}>
                     <div style={{flex:1, minWidth:200}}>
                       <div style={{fontSize:36, fontWeight:900, background:GRAD,
@@ -758,13 +756,13 @@ export default function App() {
                   </div>
                 </Card>
 
-                <Card title="📝 GRAMMAR" accent={P.magenta}>
+                <Card title="📝 GRAMMAR" accent={P.dark}>
                   <Bar label="GRAMMAR SCORE" score={a.grammar?.score??0} tip={a.grammar?.tip}/>
                   {a.grammar?.issues?.length>0 && (
                     <div>
                       <div style={{fontSize:11, color:P.muted, marginBottom:8, letterSpacing:1}}>ISSUES FOUND:</div>
                       {a.grammar.issues.map((i,idx)=>(
-                        <div key={idx} style={{fontSize:12, color:"#fca5a5", padding:"5px 0",
+                        <div key={idx} style={{fontSize:12, color:"#E7DBEF", padding:"5px 0",
                           borderBottom:`1px solid ${P.border}`}}>▸ {i}</div>
                       ))}
                     </div>
@@ -772,12 +770,12 @@ export default function App() {
                 </Card>
 
                 <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20}}>
-                  <Card title="🗣 PRONUNCIATION" accent="#34d399">
+                  <Card title="🗣 PRONUNCIATION" accent="#A56ABD">
                     <Bar label="PRONUNCIATION" score={a.pronunciation?.score??0}/>
                     <p style={{fontSize:12, color:P.muted, lineHeight:1.6, margin:"8px 0 4px"}}>{a.pronunciation?.notes}</p>
                     <p style={{fontSize:11, color:P.border, margin:0}}>💡 {a.pronunciation?.tip}</p>
                   </Card>
-                  <Card title="🌍 ACCENT" accent={P.coral}>
+                  <Card title="🌍 ACCENT" accent={P.mid}>
                     <div style={{fontSize:20, fontWeight:900, background:GRAD,
                       WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:8}}>
                       {a.accent?.detected}
@@ -787,7 +785,7 @@ export default function App() {
                   </Card>
                 </div>
 
-                <Card title="💪 CONFIDENCE" accent={P.coral}>
+                <Card title="💪 CONFIDENCE" accent={P.mid}>
                   <Bar label="CONFIDENCE" score={a.confidence?.score??0} tip={a.confidence?.tip}/>
                   <div style={{display:"flex", flexWrap:"wrap", marginTop:8}}>
                     {a.confidence?.signals?.map((s,i)=><Chip key={i} text={s.toUpperCase()}/>)}
@@ -795,7 +793,7 @@ export default function App() {
                 </Card>
 
                 {a.voice_archetype && (
-                  <Card title="🎭 VOICE ARCHETYPE" accent={P.magenta}>
+                  <Card title="🎭 VOICE ARCHETYPE" accent={P.dark}>
                     <div style={{display:"flex", gap:16, alignItems:"flex-start"}}>
                       <div style={{fontSize:52}}>{archetypeEmoji[a.voice_archetype.type]||"🎤"}</div>
                       <div>
@@ -804,25 +802,25 @@ export default function App() {
                           {a.voice_archetype.type?.toUpperCase()}
                         </div>
                         <p style={{fontSize:13, color:P.muted, lineHeight:1.6, margin:"0 0 12px"}}>{a.voice_archetype.description}</p>
-                        <div style={{fontSize:10, color:"#A855F7", marginBottom:4, letterSpacing:2}}>STRENGTHS</div>
-                        {a.voice_archetype.strengths?.map((s,i)=><div key={i} style={{fontSize:12, color:"#A855F7"}}>✓ {s}</div>)}
-                        <div style={{fontSize:10, color:P.coral, marginBottom:4, marginTop:10, letterSpacing:2}}>GROWTH AREAS</div>
-                        {a.voice_archetype.growth_areas?.map((s,i)=><div key={i} style={{fontSize:12, color:P.coral}}>→ {s}</div>)}
+                        <div style={{fontSize:10, color:"#A56ABD", marginBottom:4, letterSpacing:2}}>STRENGTHS</div>
+                        {a.voice_archetype.strengths?.map((s,i)=><div key={i} style={{fontSize:12, color:"#A56ABD"}}>✓ {s}</div>)}
+                        <div style={{fontSize:10, color:P.mid, marginBottom:4, marginTop:10, letterSpacing:2}}>GROWTH AREAS</div>
+                        {a.voice_archetype.growth_areas?.map((s,i)=><div key={i} style={{fontSize:12, color:P.mid}}>→ {s}</div>)}
                       </div>
                     </div>
                   </Card>
                 )}
 
                 <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20}}>
-                  <Card title="⭐ TOP STRENGTHS" accent="#A855F7">
+                  <Card title="⭐ TOP STRENGTHS" accent="#A56ABD">
                     {a.top_strengths?.map((s,i)=>(
-                      <div key={i} style={{fontSize:13, color:"#A855F7", padding:"6px 0",
+                      <div key={i} style={{fontSize:13, color:"#A56ABD", padding:"6px 0",
                         borderBottom:`1px solid ${P.border}`}}>✓ {s}</div>
                     ))}
                   </Card>
-                  <Card title="🚀 KEY IMPROVEMENTS" accent={P.coral}>
+                  <Card title="🚀 KEY IMPROVEMENTS" accent={P.mid}>
                     {a.top_improvements?.map((s,i)=>(
-                      <div key={i} style={{fontSize:13, color:P.coral, padding:"6px 0",
+                      <div key={i} style={{fontSize:13, color:P.mid, padding:"6px 0",
                         borderBottom:`1px solid ${P.border}`}}>→ {s}</div>
                     ))}
                   </Card>
@@ -856,7 +854,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         * { box-sizing:border-box; }
-        audio { accent-color:${P.magenta}; }
+        audio { accent-color:${P.dark}; }
         .sidebar { transform: translateX(0) !important; }
         .hamburger { display: none !important; }
         @media (max-width: 768px) {
