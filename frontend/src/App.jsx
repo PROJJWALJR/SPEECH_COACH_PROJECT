@@ -7,25 +7,28 @@ const MAX_SECONDS = 300;
 
 // ── Palette (purple monochrome) ───────────────────────────────────────────────
 const P = {
-  deep:    "#49225B",   // darkest — sidebar, page bg
-  dark:    "#6E3482",   // cards, borders
-  mid:     "#A56ABD",   // accents, active states, highlights
-  light:   "#E7DBEF",   // muted text, subtle elements
-  white:   "#F5EBFA",   // headings, primary text
-  card:    "#3A1A4A",   // card background (slightly darker than deep)
-  border:  "#5C2D72",   // borders (between deep and dark)
-  muted:   "#C4A8D4",   // secondary text
+  deep:    "#090602",   // darkest — sidebar, page bg
+  dark:    "#1C1A13",   // cards, borders
+  mid:     "#3F3518",   // accent shadow, support
+  light:   "#F4E7C2",   // muted text, subtle elements
+  white:   "#F9F5E7",   // headings, primary text
+  card:    "#16130B",   // card background (slightly darker than deep)
+  border:  "#3A2F15",   // borders (between deep and dark)
+  muted:   "#B89F5B",   // secondary text
+  pink:    "#D4AF37",   // gold accent alias
+  gold:    "#D4AF37",
+  goldSoft:"#E4C96D",
 };
 
-const GRAD  = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.mid})`;
-const GRAD2 = `linear-gradient(135deg, ${P.dark}, ${P.mid})`;
-const GRAD_BG = `linear-gradient(160deg, #2A1038 0%, ${P.deep} 50%, #3D1A50 100%)`;
+const GRAD  = `linear-gradient(135deg, ${P.dark}, ${P.gold}, ${P.goldSoft})`;
+const GRAD2 = `linear-gradient(135deg, ${P.deep}, ${P.gold})`;
+const GRAD_BG = `linear-gradient(160deg, #000000 0%, ${P.deep} 50%, #1C170C 100%)`;
 
-// ── Score colour (purple monochrome scale) ────────────────────────────────────
+// ── Score colour (gold/black scale) ────────────────────────────────────────
 const scoreColor = (n) => {
-  if (n >= 80) return P.mid;
-  if (n >= 60) return P.dark;
-  if (n >= 40) return "#8B4FA8";
+  if (n >= 80) return P.gold;
+  if (n >= 60) return P.goldSoft;
+  if (n >= 40) return P.mid;
   return P.border;
 };
 
@@ -138,8 +141,8 @@ function WaveViz({ stream }) {
       const bw = canvas.width / data.length;
       data.forEach((v, i) => {
         const h = (v / 255) * canvas.height;
-        const hue = 280 + (i / data.length) * 60;
-        c.fillStyle = `hsl(${hue}, 80%, 65%)`;
+        const hue = 40 + (i / data.length) * 20;
+        c.fillStyle = `hsl(${hue}, 90%, 55%)`;
         c.fillRect(i * bw, canvas.height - h, bw - 1, h);
       });
       rafRef.current = requestAnimationFrame(draw);
@@ -148,15 +151,15 @@ function WaveViz({ stream }) {
     return () => { cancelAnimationFrame(rafRef.current); ctx.close(); };
   }, [stream]);
   return <canvas ref={canvasRef} width={560} height={60}
-    style={{width:"100%", height:60, borderRadius:10, background:"#080B2E"}}/>;
+    style={{width:"100%", height:60, borderRadius:10, background:"#070602"}}/>;
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
 const FEEDBACK_OPTIONS = [
-  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:"#A56ABD" },
-  { label:"😐 AVERAGE", value:"average", from:P.card,    to:P.deep  },
-  { label:"👎 BAD",     value:"bad",     from:"#49225B", to:P.mid   },
-  { label:"💀 WORST",   value:"worst",   from:"#2A1038", to:"#49225B" },
+  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:P.gold    },
+  { label:"😐 AVERAGE", value:"average", from:P.card,    to:P.deep    },
+  { label:"👎 BAD",     value:"bad",     from:P.dark,  to:P.mid     },
+  { label:"💀 WORST",   value:"worst",   from:P.deep,  to:P.border  },
 ];
 
 function FeedbackPanel({ feedback, onFeedback }) {
@@ -181,7 +184,7 @@ function FeedbackPanel({ feedback, onFeedback }) {
         })}
       </div>
       {feedback && (
-        <div style={{marginTop:14, fontSize:12, color:"#A56ABD", fontFamily:"Nunito, sans-serif", fontWeight:700}}>
+        <div style={{marginTop:14, fontSize:12, color:P.gold, fontFamily:"Nunito, sans-serif", fontWeight:700}}>
           ✅ FEEDBACK RECORDED: {feedback.toUpperCase()}
         </div>
       )}
@@ -200,8 +203,8 @@ function PerfMetrics({ performance, system_metrics }) {
     <Card title="⚡ ANALYSIS METRICS" accent={P.deep}>
       <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20}}>
         {[
-          {label:"TOTAL TIME", value:fmt(total_ms),   color:P.pink},
-          {label:"WHISPER",    value:fmt(whisper_ms), color:"#A56ABD"},
+          {label:"TOTAL TIME", value:fmt(total_ms),   color:P.gold},
+          {label:"WHISPER",    value:fmt(whisper_ms), color:P.goldSoft},
           {label:"LLM",        value:fmt(llm_ms),     color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
@@ -232,8 +235,8 @@ function PerfMetrics({ performance, system_metrics }) {
       {ram && (
         <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12}}>
           {[
-            {label:"CPU USAGE",   value:`${ram.cpu_percent}%`,      color: ram.cpu_percent > 80 ? P.mid : "#A56ABD"},
-            {label:"PROCESS RAM", value:`${ram.process_ram_mb} MB`, color:P.pink},
+            {label:"CPU USAGE",   value:`${ram.cpu_percent}%`,      color: ram.cpu_percent > 80 ? P.mid : P.goldSoft},
+            {label:"PROCESS RAM", value:`${ram.process_ram_mb} MB`, color:P.gold},
             {label:"RAM Δ",       value:`${ramDelta>0?"+":""}${ramDelta} MB`, color:ramDelta>20?P.mid:P.muted},
           ].map(({label,value,color}) => (
             <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
@@ -249,7 +252,7 @@ function PerfMetrics({ performance, system_metrics }) {
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
-function Sparkline({ data, color="#A56ABD", width=200, height=50 }) {
+function Sparkline({ data, color=P.gold, width=200, height=50 }) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
@@ -296,8 +299,8 @@ function Dashboard() {
   );
 
   if (error) return (
-    <div style={{background:"#2A1038", border:`1px solid ${P.mid}`, borderRadius:12,
-      padding:16, color:"#E7DBEF", fontSize:13, fontFamily:"Nunito, sans-serif"}}>⚠️ {error}</div>
+    <div style={{background:P.dark, border:`1px solid ${P.mid}`, borderRadius:12,
+      padding:16, color:P.white, fontSize:13, fontFamily:"Nunito, sans-serif"}}>⚠️ {error}</div>
   );
 
   if (sessions.length === 0) return (
@@ -326,7 +329,7 @@ function Dashboard() {
         {[
           {label:"SESSIONS",      value:sessions.length,        color:P.pink},
           {label:"AVG SCORE",     value:avg("overall_score"),   color:scoreColor(avg("overall_score"))},
-          {label:"BEST SCORE",    value:best,                   color:"#A56ABD"},
+          {label:"BEST SCORE",    value:best,                   color:P.gold},
           {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.card, border:`1px solid ${P.border}`,
@@ -368,7 +371,7 @@ function Dashboard() {
               const count = feedbackCounts[k]||0;
               const total = sessions.filter(s=>s.user_feedback).length;
               const pct   = Math.round((count/total)*100)||0;
-              const colors = {good:"#A56ABD", average:P.deep, bad:P.mid, worst:"#49225B"};
+              const colors = {good:P.gold, average:P.deep, bad:P.mid, worst:P.border};
               return (
                 <div key={k} style={{background:P.deep, borderRadius:12, padding:"14px 20px",
                   textAlign:"center", flex:1, minWidth:80, border:`1px solid ${P.border}`}}>
@@ -734,7 +737,7 @@ export default function App() {
                     </>
                   )}
                   {phase==="recording" && (
-                    <GradBtn onClick={stopRecording} grad={`linear-gradient(135deg,#49225B,${P.mid})`}>
+                    <GradBtn onClick={stopRecording} grad={`linear-gradient(135deg,${P.dark},${P.gold})`}>
                       ■ STOP RECORDING
                     </GradBtn>
                   )}
