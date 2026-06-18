@@ -2,18 +2,21 @@ import { useState } from "react";
 import { supabase } from "./supabaseClient";
 
 const P = {
-  deep:    "#49225B",
-  dark:    "#6E3482",
-  mid:     "#A56ABD",
-  light:   "#E7DBEF",
-  white:   "#F5EBFA",
-  card:    "#3A1A4A",
-  border:  "#5C2D72",
-  muted:   "#C4A8D4",
+  deep:    "#090602",
+  dark:    "#1C1A13",
+  mid:     "#3F3518",
+  light:   "#F4E7C2",
+  white:   "#F9F5E7",
+  card:    "#16130B",
+  border:  "#3A2F15",
+  muted:   "#B89F5B",
+  pink:    "#D4AF37",
+  gold:    "#D4AF37",
+  goldSoft: "#E4C96D",
 };
 
-const GRAD = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.mid})`;
-const GRAD_BG = `linear-gradient(160deg, #2A1038 0%, ${P.deep} 50%, #3D1A50 100%)`;
+const GRAD = `linear-gradient(135deg, ${P.dark}, ${P.gold}, ${P.goldSoft})`;
+const GRAD_BG = `linear-gradient(160deg, #000000 0%, ${P.deep} 50%, #1C170C 100%)`;
 
 export default function Auth({ onAuthed }) {
   const [mode, setMode]       = useState("login"); // login | signup
