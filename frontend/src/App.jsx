@@ -1,34 +1,31 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "./supabaseClient";
+import Auth from "./Auth";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const MAX_SECONDS = 300;
 
-// ── Palette (purple + yellow) ───────────────────────────────────────────────
+// ── Palette (purple monochrome) ───────────────────────────────────────────────
 const P = {
-  deep:    "#240A3E",   // darkest — sidebar, page bg
-  dark:    "#5F2E7B",   // cards, borders
-  mid:     "#8C5BC3",   // accents, active states, highlights
+  deep:    "#49225B",   // darkest — sidebar, page bg
+  dark:    "#6E3482",   // cards, borders
+  mid:     "#A56ABD",   // accents, active states, highlights
   light:   "#E7DBEF",   // muted text, subtle elements
-  white:   "#F9F3D1",   // headings, primary text
+  white:   "#F5EBFA",   // headings, primary text
   card:    "#3A1A4A",   // card background (slightly darker than deep)
   border:  "#5C2D72",   // borders (between deep and dark)
-  muted:   "#D8C3A5",   // secondary text
-  yellow:  "#F7D34F",   // bright accent for purple backgrounds
-  gold:    "#F4C43C",   // stronger yellow accent
-  pink:    "#F7D34F",   // legacy alias for accent references
+  muted:   "#C4A8D4",   // secondary text
 };
 
-const GRAD      = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.yellow})`;
-const GRAD2     = `linear-gradient(135deg, ${P.dark}, ${P.yellow})`;
-const GRAD_TEXT = `linear-gradient(135deg, ${P.gold}, ${P.yellow})`;
-const GRAD_BG   = `linear-gradient(160deg, #1B0828 0%, ${P.deep} 40%, #3D1A50 100%)`;
+const GRAD  = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.mid})`;
+const GRAD2 = `linear-gradient(135deg, ${P.dark}, ${P.mid})`;
+const GRAD_BG = `linear-gradient(160deg, #2A1038 0%, ${P.deep} 50%, #3D1A50 100%)`;
 
 // ── Score colour (purple monochrome scale) ────────────────────────────────────
 const scoreColor = (n) => {
   if (n >= 80) return P.mid;
   if (n >= 60) return P.dark;
-  if (n >= 40) return "#dbb10a";
+  if (n >= 40) return "#8B4FA8";
   return P.border;
 };
 
@@ -82,7 +79,7 @@ function Chip({ text, color }) {
   return (
     <span style={{
       background: color || `linear-gradient(135deg, ${P.deep}55, ${P.dark}33)`,
-      color: P.yellow, fontSize:11, padding:"4px 12px",
+      color: P.pink, fontSize:11, padding:"4px 12px",
       borderRadius:999, display:"inline-block", marginRight:6, marginBottom:6,
       border:`1px solid ${P.border}`, fontFamily:"Nunito, sans-serif", fontWeight:600,
     }}>{text}</span>
@@ -156,10 +153,10 @@ function WaveViz({ stream }) {
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
 const FEEDBACK_OPTIONS = [
-  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:"#14e522" },
+  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:"#A56ABD" },
   { label:"😐 AVERAGE", value:"average", from:P.card,    to:P.deep  },
-  { label:"👎 BAD",     value:"bad",     from:"#18079e", to:P.mid   },
-  { label:"💀 WORST",   value:"worst",   from:"#a55356", to:"#d51212" },
+  { label:"👎 BAD",     value:"bad",     from:"#49225B", to:P.mid   },
+  { label:"💀 WORST",   value:"worst",   from:"#2A1038", to:"#49225B" },
 ];
 
 function FeedbackPanel({ feedback, onFeedback }) {
@@ -327,9 +324,9 @@ function Dashboard() {
     <>
       <div style={{display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20}}>
         {[
-          {label:"SESSIONS",      value:sessions.length,        color:P.yellow},
+          {label:"SESSIONS",      value:sessions.length,        color:P.pink},
           {label:"AVG SCORE",     value:avg("overall_score"),   color:scoreColor(avg("overall_score"))},
-          {label:"BEST SCORE",    value:best,                   color:P.gold},
+          {label:"BEST SCORE",    value:best,                   color:"#A56ABD"},
           {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.card, border:`1px solid ${P.border}`,
@@ -409,7 +406,7 @@ function Dashboard() {
                   </td>
                   <td style={{padding:"10px 12px", color:P.white}}>{s.pace_wpm}</td>
                   <td style={{padding:"10px 12px", color:s.filler_total>5?P.mid:P.muted}}>{s.filler_total}</td>
-                  <td style={{padding:"10px 12px", color:P.yellow}}>
+                  <td style={{padding:"10px 12px", color:P.pink}}>
                     {archetypeEmoji[s.voice_archetype]||""} {s.voice_archetype||"—"}
                   </td>
                   <td style={{padding:"10px 12px", color:P.mid, whiteSpace:"nowrap"}}>
@@ -434,6 +431,7 @@ function Dashboard() {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
+  const [session,    setSession]   = useState(undefined); // undefined = checking, null = logged out
   const [tab,        setTab]       = useState("coach");
   const [sideOpen,   setSideOpen]  = useState(false);
   const [recording,  setRecording] = useState(false);
@@ -454,12 +452,26 @@ export default function App() {
   const timerRef    = useRef(null);
   const fileInputRef= useRef(null);
 
+  // ── Auth: check session on load + listen for changes ─────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
   const saveToSupabase = async (data, fb=null) => {
     const { analysis, pace, filler_words, transcript, duration_seconds, performance, system_metrics } = data;
     const a = analysis||{};
     const row = {
+      user_id:              session?.user?.id      ??null,
       overall_score:       a.overall_score         ??null,
       grammar_score:       a.grammar?.score        ??null,
       confidence_score:    a.confidence?.score     ??null,
@@ -559,6 +571,19 @@ export default function App() {
     {id:"dashboard", icon:"📊", label:"DASHBOARD"},
   ];
 
+  // ── Auth gate ────────────────────────────────────────────────────────────
+  if (session === undefined) {
+    return (
+      <div style={{minHeight:"100vh", background:GRAD_BG, display:"flex",
+        alignItems:"center", justifyContent:"center", color:P.muted, fontFamily:"Nunito, sans-serif"}}>
+        <div style={{fontSize:36, animation:"spin 1.5s linear infinite"}}>⚙️</div>
+      </div>
+    );
+  }
+  if (!session) {
+    return <Auth onAuthed={setSession} />;
+  }
+
   return (
     <div style={{minHeight:"100vh", background:GRAD_BG, color:P.white,
       fontFamily:"Nunito, sans-serif", display:"flex"}}>
@@ -576,7 +601,7 @@ export default function App() {
         <div style={{padding:"32px 24px 24px"}}>
           <div style={{
             fontSize:22, fontWeight:900, fontFamily:"Nunito, sans-serif",
-            background:GRAD_TEXT, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+            background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
             letterSpacing:1, lineHeight:1.2,
           }}>SPEECH<br/>COACH</div>
           <div style={{fontSize:10, color:P.muted, letterSpacing:3, marginTop:4}}>VOICE ANALYTICS</div>
@@ -607,8 +632,26 @@ export default function App() {
           })}
         </nav>
 
+        {/* User info + logout */}
+        <div style={{padding:"0 24px 12px"}}>
+          <div style={{height:1, background:P.border, margin:"0 0 16px"}}/>
+          <div style={{fontSize:10, color:P.muted, letterSpacing:1, marginBottom:8,
+            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+            {session.user?.email?.toUpperCase()}
+          </div>
+          <button onClick={handleLogout} style={{
+            width:"100%", background:"transparent", border:`1px solid ${P.border}`,
+            borderRadius:10, padding:"9px 0", color:P.muted, fontSize:11,
+            fontWeight:800, letterSpacing:1, cursor:"pointer", fontFamily:"Nunito, sans-serif",
+            transition:"all .2s",
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.color=P.white; e.currentTarget.style.borderColor=P.mid;}}
+          onMouseLeave={e=>{e.currentTarget.style.color=P.muted; e.currentTarget.style.borderColor=P.border;}}
+          >↪ LOG OUT</button>
+        </div>
+
         {/* Bottom tag */}
-        <div style={{padding:"20px 24px", fontSize:10, color:P.border, letterSpacing:1}}>
+        <div style={{padding:"4px 24px 20px", fontSize:10, color:P.border, letterSpacing:1}}>
           GROQ · WHISPER · LLAMA 3
         </div>
       </aside>
@@ -641,7 +684,7 @@ export default function App() {
                     <div style={{textAlign:"center", marginTop:16}}>
                       <div style={{
                         fontSize:48, fontFamily:"Nunito, sans-serif", fontWeight:900,
-                        background:GRAD_TEXT, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+                        background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
                         letterSpacing:4,
                       }}>{fmt(elapsed)}</div>
                       <div style={{fontSize:12, color:P.muted, letterSpacing:2}}>
@@ -673,7 +716,7 @@ export default function App() {
                 {phase==="done" && audioUrl && (
                   <div style={{marginBottom:20}}>
                     <div style={{
-                      background:GRAD_TEXT, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+                      background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
                       textAlign:"center", marginBottom:12, fontSize:14, fontWeight:800, letterSpacing:1,
                     }}>
                       {uploadName?`✅ UPLOADED: ${uploadName.toUpperCase()}`:`✅ RECORDING SAVED — ${fmt(elapsed)}`}
@@ -741,7 +784,7 @@ export default function App() {
                 <Card title="⏱ PACE & FILLER WORDS" accent={P.mid}>
                   <div style={{display:"flex", gap:24, flexWrap:"wrap"}}>
                     <div style={{flex:1, minWidth:200}}>
-                      <div style={{fontSize:36, fontWeight:900, background:GRAD_TEXT,
+                      <div style={{fontSize:36, fontWeight:900, background:GRAD,
                         WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"}}>
                         {pace?.wpm} <span style={{fontSize:14, color:P.muted, WebkitTextFillColor:P.muted}}>WPM</span>
                       </div>
@@ -780,7 +823,7 @@ export default function App() {
                     <p style={{fontSize:11, color:P.border, margin:0}}>💡 {a.pronunciation?.tip}</p>
                   </Card>
                   <Card title="🌍 ACCENT" accent={P.mid}>
-                    <div style={{fontSize:20, fontWeight:900, background:GRAD_TEXT,
+                    <div style={{fontSize:20, fontWeight:900, background:GRAD,
                       WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:8}}>
                       {a.accent?.detected}
                     </div>
@@ -801,7 +844,7 @@ export default function App() {
                     <div style={{display:"flex", gap:16, alignItems:"flex-start"}}>
                       <div style={{fontSize:52}}>{archetypeEmoji[a.voice_archetype.type]||"🎤"}</div>
                       <div>
-                        <div style={{fontSize:22, fontWeight:900, background:GRAD_TEXT,
+                        <div style={{fontSize:22, fontWeight:900, background:GRAD,
                           WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:4}}>
                           {a.voice_archetype.type?.toUpperCase()}
                         </div>
@@ -858,7 +901,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         * { box-sizing:border-box; }
-        audio { accent-color:${P.yellow}; }
+        audio { accent-color:${P.dark}; }
         .sidebar { transform: translateX(0) !important; }
         .hamburger { display: none !important; }
         @media (max-width: 768px) {
