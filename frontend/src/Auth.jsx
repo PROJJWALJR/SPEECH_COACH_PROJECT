@@ -3,17 +3,19 @@ import { useState } from "react";
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const P = {
-  deep:   "#49225B",
-  dark:   "#6E3482",
-  mid:    "#A56ABD",
-  light:  "#E7DBEF",
-  white:  "#F5EBFA",
-  card:   "#3A1A4A",
-  border: "#5C2D72",
-  muted:  "#C4A8D4",
+  deep:   "#0B3650",
+  dark:   "#174F77",
+  mid:    "#2B82B7",
+  gold:   "#D4AF37",
+  light:  "#E9E2C9",
+  white:  "#F9F5E1",
+  card:   "#103850",
+  border: "#4F7B9C",
+  muted:  "#AFC9D5",
 };
-const GRAD    = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.mid})`;
-const GRAD_BG = `linear-gradient(160deg, #2A1038 0%, ${P.deep} 50%, #3D1A50 100%)`;
+const FONT = "Georgia, 'Times New Roman', serif";
+const GRAD    = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.gold})`;
+const GRAD_BG = `linear-gradient(160deg, #082238 0%, ${P.deep} 45%, ${P.gold} 100%)`;
 
 export default function Auth({ onAuthed }) {
   const [mode,     setMode]     = useState("login");
@@ -25,7 +27,7 @@ export default function Auth({ onAuthed }) {
   const inputStyle = {
     width: "100%", background: P.deep, border: `1px solid ${P.border}`,
     borderRadius: 12, padding: "14px 16px", color: P.white, fontSize: 14,
-    fontFamily: "Nunito, sans-serif", fontWeight: 600, outline: "none",
+    fontFamily: FONT, fontWeight: 600, outline: "none",
     marginBottom: 16, boxSizing: "border-box",
   };
 
@@ -56,7 +58,7 @@ export default function Auth({ onAuthed }) {
     <div style={{
       minHeight: "100vh", background: GRAD_BG, display: "flex",
       alignItems: "center", justifyContent: "center",
-      fontFamily: "Nunito, sans-serif", padding: 20,
+      fontFamily: FONT, padding: 20,
     }}>
       <div style={{
         width: "100%", maxWidth: 400, background: P.card,
@@ -80,7 +82,7 @@ export default function Auth({ onAuthed }) {
               flex: 1, padding: "10px 0", borderRadius: 9, border: "none", cursor: "pointer",
               background: mode === id ? GRAD : "transparent",
               color: mode === id ? "#fff" : P.muted,
-              fontFamily: "Nunito, sans-serif", fontWeight: 800, fontSize: 12,
+              fontFamily: FONT, fontWeight: 800, fontSize: 12,
               letterSpacing: 1, transition: "all .2s",
             }}>{label}</button>
           ))}
@@ -105,7 +107,7 @@ export default function Auth({ onAuthed }) {
 
           {error && (
             <div style={{
-              background: "#2A1038", border: `1px solid ${P.mid}`, borderRadius: 10,
+              background: P.deep, border: `1px solid ${P.mid}`, borderRadius: 10,
               padding: 12, marginBottom: 16, color: P.light, fontSize: 12, fontWeight: 700,
             }}>⚠️ {error}</div>
           )}
@@ -113,7 +115,7 @@ export default function Auth({ onAuthed }) {
           <button type="submit" disabled={loading} style={{
             width: "100%", background: GRAD, color: "#fff", border: "none",
             borderRadius: 12, padding: "14px 0", fontSize: 14, fontWeight: 800,
-            cursor: loading ? "not-allowed" : "pointer", fontFamily: "Nunito, sans-serif",
+            cursor: loading ? "not-allowed" : "pointer", fontFamily: FONT,
             letterSpacing: 1, opacity: loading ? 0.6 : 1, transition: "opacity .2s",
           }}>
             {loading ? "LOADING…" : mode === "login" ? "LOG IN" : "CREATE ACCOUNT"}

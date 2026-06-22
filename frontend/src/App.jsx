@@ -12,25 +12,27 @@ const MAX_SECONDS = 300;
 
 // ── Palette (purple monochrome) ───────────────────────────────────────────────
 const P = {
-  deep:    "#49225B",   // darkest — sidebar, page bg
-  dark:    "#6E3482",   // cards, borders
-  mid:     "#A56ABD",   // accents, active states, highlights
-  light:   "#E7DBEF",   // muted text, subtle elements
-  white:   "#F5EBFA",   // headings, primary text
-  card:    "#3A1A4A",   // card background (slightly darker than deep)
-  border:  "#5C2D72",   // borders (between deep and dark)
-  muted:   "#C4A8D4",   // secondary text
+  deep:    "#0B3650",   // darkest — sidebar, page bg
+  dark:    "#174F77",   // cards, borders
+  mid:     "#2B82B7",   // accents, active states, highlights
+  gold:    "#D4AF37",   // gold accent
+  light:   "#E9E2C9",   // muted text, subtle elements
+  white:   "#F9F5E1",   // headings, primary text
+  card:    "#103850",   // card background
+  border:  "#4F7B9C",   // borders
+  muted:   "#AFC9D5",   // secondary text
 };
 
-const GRAD  = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.mid})`;
+const FONT = "Georgia, 'Times New Roman', serif";
+const GRAD  = `linear-gradient(135deg, ${P.deep}, ${P.dark}, ${P.gold})`;
 const GRAD2 = `linear-gradient(135deg, ${P.dark}, ${P.mid})`;
-const GRAD_BG = `linear-gradient(160deg, #2A1038 0%, ${P.deep} 50%, #3D1A50 100%)`;
+const GRAD_BG = `linear-gradient(160deg, #082238 0%, ${P.deep} 45%, ${P.gold} 100%)`;
 
 // ── Score colour (purple monochrome scale) ────────────────────────────────────
 const scoreColor = (n) => {
-  if (n >= 80) return P.mid;
-  if (n >= 60) return P.dark;
-  if (n >= 40) return "#8B4FA8";
+  if (n >= 80) return P.gold;
+  if (n >= 60) return P.mid;
+  if (n >= 40) return P.dark;
   return P.border;
 };
 
@@ -54,9 +56,9 @@ function Gauge({ value, label, size = 120 }) {
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
           transform="rotate(-90 60 60)" style={{transition:"stroke-dasharray 1s ease"}}/>
         <text x={cx} y={cy+5} textAnchor="middle" fill={col}
-          fontSize="22" fontFamily="Nunito, sans-serif" fontWeight="800">{value}</text>
+          fontSize="22" fontFamily={FONT} fontWeight="800">{value}</text>
       </svg>
-      <div style={{fontSize:10, color:P.muted, marginTop:-4, letterSpacing:2, textTransform:"uppercase", fontFamily:"Nunito, sans-serif"}}>{label}</div>
+      <div style={{fontSize:10, color:P.muted, marginTop:-4, letterSpacing:2, textTransform:"uppercase", fontFamily: FONT}}>{label}</div>
     </div>
   );
 }
@@ -66,15 +68,15 @@ function Bar({ label, score, tip }) {
   return (
     <div style={{marginBottom:16}}>
       <div style={{display:"flex", justifyContent:"space-between", marginBottom:5}}>
-        <span style={{fontSize:13, color:P.white, fontWeight:700, fontFamily:"Nunito, sans-serif"}}>{label}</span>
-        <span style={{fontSize:13, color:scoreColor(score), fontFamily:"Nunito, sans-serif", fontWeight:800}}>{score}/100</span>
+        <span style={{fontSize:13, color:P.white, fontWeight:700, fontFamily: FONT}}>{label}</span>
+        <span style={{fontSize:13, color:scoreColor(score), fontFamily: FONT, fontWeight:800}}>{score}/100</span>
       </div>
       <div style={{background:P.border, borderRadius:999, height:7, overflow:"hidden"}}>
         <div style={{width:`${score}%`, height:"100%",
           background:`linear-gradient(90deg, ${P.mid}, ${P.dark})`,
           borderRadius:999, transition:"width 1s ease"}}/>
       </div>
-      {tip && <div style={{fontSize:11, color:P.muted, marginTop:5, lineHeight:1.5, fontFamily:"Nunito, sans-serif"}}>💡 {tip}</div>}
+      {tip && <div style={{fontSize:11, color:P.muted, marginTop:5, lineHeight:1.5, fontFamily: FONT}}>💡 {tip}</div>}
     </div>
   );
 }
@@ -84,9 +86,9 @@ function Chip({ text, color }) {
   return (
     <span style={{
       background: color || `linear-gradient(135deg, ${P.deep}55, ${P.dark}33)`,
-      color: P.pink, fontSize:11, padding:"4px 12px",
+      color: P.gold, fontSize:11, padding:"4px 12px",
       borderRadius:999, display:"inline-block", marginRight:6, marginBottom:6,
-      border:`1px solid ${P.border}`, fontFamily:"Nunito, sans-serif", fontWeight:600,
+      border:`1px solid ${P.border}`, fontFamily: FONT, fontWeight:600,
     }}>{text}</span>
   );
 }
@@ -99,7 +101,7 @@ function Card({ title, children, accent }) {
       padding:24, marginBottom:20,
       borderTop:`3px solid ${accent || P.dark}`,
     }}>
-      <h3 style={{margin:"0 0 16px", color:P.white, fontSize:15, letterSpacing:.5, fontFamily:"Nunito, sans-serif", fontWeight:800}}>{title}</h3>
+      <h3 style={{margin:"0 0 16px", color:P.white, fontSize:15, letterSpacing:.5, fontFamily: FONT, fontWeight:800}}>{title}</h3>
       {children}
     </div>
   );
@@ -115,7 +117,7 @@ function GradBtn({ onClick, children, grad, style: extra = {} }) {
         background: grad || GRAD,
         color:"#fff", border:"none", borderRadius:12,
         padding:"13px 30px", fontSize:14, fontWeight:800, cursor:"pointer",
-        fontFamily:"Nunito, sans-serif", letterSpacing:.6,
+        fontFamily: FONT, letterSpacing:.6,
         boxShadow: hov ? `0 8px 32px ${P.dark}66` : `0 4px 16px ${P.deep}44`,
         transform: hov ? "translateY(-2px)" : "translateY(0)",
         transition:"all .2s",
@@ -153,21 +155,21 @@ function WaveViz({ stream }) {
     return () => { cancelAnimationFrame(rafRef.current); ctx.close(); };
   }, [stream]);
   return <canvas ref={canvasRef} width={560} height={60}
-    style={{width:"100%", height:60, borderRadius:10, background:"#080B2E"}}/>;
+    style={{width:"100%", height:60, borderRadius:10, background:P.dark}}/>;
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
 const FEEDBACK_OPTIONS = [
-  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:"#A56ABD" },
+  { label:"👍 GOOD",    value:"good",    from:P.deep,  to:P.gold },
   { label:"😐 AVERAGE", value:"average", from:P.card,    to:P.deep  },
-  { label:"👎 BAD",     value:"bad",     from:"#49225B", to:P.mid   },
-  { label:"💀 WORST",   value:"worst",   from:"#2A1038", to:"#49225B" },
+  { label:"👎 BAD",     value:"bad",     from:P.deep,   to:P.mid   },
+  { label:"💀 WORST",   value:"worst",   from:P.dark,   to:P.deep },
 ];
 
 function FeedbackPanel({ feedback, onFeedback }) {
   return (
     <Card title="🗳 RATE THIS ASSESSMENT" accent={P.mid}>
-      <p style={{fontSize:12, color:P.muted, margin:"0 0 16px", fontFamily:"Nunito, sans-serif"}}>
+      <p style={{fontSize:12, color:P.muted, margin:"0 0 16px", fontFamily: FONT}}>
         HOW ACCURATE WAS THIS ANALYSIS?
       </p>
       <div style={{display:"flex", gap:10, flexWrap:"wrap"}}>
@@ -179,14 +181,14 @@ function FeedbackPanel({ feedback, onFeedback }) {
               color:"#fff", border:`2px solid ${isActive ? opt.to : P.border}`,
               borderRadius:10, padding:"10px 20px", fontSize:12,
               fontWeight:800, cursor:"pointer", transition:"all .2s",
-              fontFamily:"Nunito, sans-serif", letterSpacing:.5,
+              fontFamily: FONT, letterSpacing:.5,
               transform: isActive ? "scale(1.06)" : "scale(1)",
             }}>{opt.label}</button>
           );
         })}
       </div>
       {feedback && (
-        <div style={{marginTop:14, fontSize:12, color:"#A56ABD", fontFamily:"Nunito, sans-serif", fontWeight:700}}>
+        <div style={{marginTop:14, fontSize:12, color:P.gold, fontFamily: FONT, fontWeight:700}}>
           ✅ FEEDBACK RECORDED: {feedback.toUpperCase()}
         </div>
       )}
@@ -205,56 +207,56 @@ function PerfMetrics({ performance, system_metrics }) {
     <Card title="⚡ ANALYSIS METRICS" accent={P.deep}>
       <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20}}>
         {[
-          {label:"TOTAL TIME", value:fmt(total_ms),   color:P.pink},
-          {label:"WHISPER",    value:fmt(whisper_ms), color:"#A56ABD"},
+          {label:"TOTAL TIME", value:fmt(total_ms),   color:P.gold},
+          {label:"WHISPER",    value:fmt(whisper_ms), color:P.gold},
           {label:"LLM",        value:fmt(llm_ms),     color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
-            <div style={{fontSize:22, fontFamily:"Nunito, sans-serif", color, fontWeight:800}}>{value}</div>
-            <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily:"Nunito, sans-serif"}}>{label}</div>
+            <div style={{fontSize:22, fontFamily: FONT, color, fontWeight:800}}>{value}</div>
+            <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
           </div>
         ))}
       </div>
       <div style={{marginBottom:20}}>
-        <div style={{fontSize:10, color:P.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:1, fontFamily:"Nunito, sans-serif"}}>TIME BREAKDOWN</div>
+        <div style={{fontSize:10, color:P.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>TIME BREAKDOWN</div>
         <div style={{display:"flex", borderRadius:8, overflow:"hidden", height:22}}>
           <div style={{width:`${breakdown?.whisper_percent}%`, background:`linear-gradient(90deg,${P.deep},${P.dark})`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:800, fontFamily:"Nunito, sans-serif"}}>
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:800, fontFamily: FONT}}>
             {breakdown?.whisper_percent}%
           </div>
           <div style={{width:`${breakdown?.llm_percent}%`, background:`linear-gradient(90deg,${P.mid},${P.dark})`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:800, fontFamily:"Nunito, sans-serif"}}>
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#fff", fontWeight:800, fontFamily: FONT}}>
             {breakdown?.llm_percent}%
           </div>
           <div style={{flex:1, background:P.border, display:"flex", alignItems:"center",
-            justifyContent:"center", fontSize:10, color:P.muted, fontFamily:"Nunito, sans-serif"}}>OTHER</div>
+            justifyContent:"center", fontSize:10, color:P.muted, fontFamily: FONT}}>OTHER</div>
         </div>
         <div style={{display:"flex", gap:16, marginTop:6}}>
-          <span style={{fontSize:11, color:P.deep, fontFamily:"Nunito, sans-serif"}}>■ WHISPER</span>
-          <span style={{fontSize:11, color:P.mid, fontFamily:"Nunito, sans-serif"}}>■ LLM</span>
+          <span style={{fontSize:11, color:P.deep, fontFamily: FONT}}>■ WHISPER</span>
+          <span style={{fontSize:11, color:P.mid, fontFamily: FONT}}>■ LLM</span>
         </div>
       </div>
       {ram && (
         <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12}}>
           {[
-            {label:"CPU USAGE",   value:`${ram.cpu_percent}%`,      color: ram.cpu_percent > 80 ? P.mid : "#A56ABD"},
-            {label:"PROCESS RAM", value:`${ram.process_ram_mb} MB`, color:P.pink},
+            {label:"CPU USAGE",   value:`${ram.cpu_percent}%`,      color: ram.cpu_percent > 80 ? P.mid : P.gold},
+            {label:"PROCESS RAM", value:`${ram.process_ram_mb} MB`, color:P.gold},
             {label:"RAM Δ",       value:`${ramDelta>0?"+":""}${ramDelta} MB`, color:ramDelta>20?P.mid:P.muted},
           ].map(({label,value,color}) => (
             <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
-              <div style={{fontSize:18, fontFamily:"Nunito, sans-serif", color, fontWeight:800}}>{value}</div>
-              <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily:"Nunito, sans-serif"}}>{label}</div>
+              <div style={{fontSize:18, fontFamily: FONT, color, fontWeight:800}}>{value}</div>
+              <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
             </div>
           ))}
         </div>
       )}
-      <div style={{fontSize:10, color:P.border, marginTop:12, fontFamily:"Nunito, sans-serif"}}>ℹ️ CPU-ONLY SERVER — NO GPU ON RENDER FREE TIER</div>
+      <div style={{fontSize:10, color:P.border, marginTop:12, fontFamily: FONT}}>ℹ️ CPU-ONLY SERVER — NO GPU ON RENDER FREE TIER</div>
     </Card>
   );
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
-function Sparkline({ data, color="#A56ABD", width=200, height=50 }) {
+function Sparkline({ data, color=P.gold, width=200, height=50 }) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data), max = Math.max(...data);
   const range = max - min || 1;
@@ -294,20 +296,20 @@ function Dashboard() {
   }, []);
 
   if (loading) return (
-    <div style={{textAlign:"center", padding:"60px 0", color:P.muted, fontFamily:"Nunito, sans-serif"}}>
+    <div style={{textAlign:"center", padding:"60px 0", color:P.muted, fontFamily: FONT}}>
       <div style={{fontSize:36, animation:"spin 1.5s linear infinite", display:"inline-block"}}>⚙️</div>
       <div style={{marginTop:12, fontWeight:700, letterSpacing:2}}>LOADING HISTORY…</div>
     </div>
   );
 
   if (error) return (
-    <div style={{background:"#2A1038", border:`1px solid ${P.mid}`, borderRadius:12,
-      padding:16, color:"#E7DBEF", fontSize:13, fontFamily:"Nunito, sans-serif"}}>⚠️ {error}</div>
+    <div style={{background:P.deep, border:`1px solid ${P.mid}`, borderRadius:12,
+      padding:16, color:P.light, fontSize:13, fontFamily: FONT}}>⚠️ {error}</div>
   );
 
   if (sessions.length === 0) return (
     <Card title="📭 NO SESSIONS YET" accent={P.border}>
-      <p style={{color:P.muted, fontSize:13, fontFamily:"Nunito, sans-serif"}}>
+      <p style={{color:P.muted, fontSize:13, fontFamily: FONT}}>
         COMPLETE YOUR FIRST ANALYSIS AND IT WILL APPEAR HERE AUTOMATICALLY.
       </p>
     </Card>
@@ -329,15 +331,15 @@ function Dashboard() {
     <>
       <div style={{display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20}}>
         {[
-          {label:"SESSIONS",      value:sessions.length,        color:P.pink},
+          {label:"SESSIONS",      value:sessions.length,        color:P.gold},
           {label:"AVG SCORE",     value:avg("overall_score"),   color:scoreColor(avg("overall_score"))},
-          {label:"BEST SCORE",    value:best,                   color:"#A56ABD"},
+          {label:"BEST SCORE",    value:best,                   color:P.gold},
           {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.mid},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.card, border:`1px solid ${P.border}`,
             borderRadius:14, padding:16, textAlign:"center"}}>
-            <div style={{fontSize:26, fontFamily:"Nunito, sans-serif", color, fontWeight:800}}>{value}</div>
-            <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily:"Nunito, sans-serif"}}>{label}</div>
+            <div style={{fontSize:26, fontFamily: FONT, color, fontWeight:800}}>{value}</div>
+            <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
           </div>
         ))}
       </div>
@@ -348,12 +350,12 @@ function Dashboard() {
             {label:"OVERALL SCORE", data:scores,     color:P.dark},
             {label:"GRAMMAR",       data:grammarArr, color:P.deep},
             {label:"CONFIDENCE",    data:confArr,    color:P.mid},
-            {label:"VOCABULARY",    data:vocabArr,   color:P.pink},
+            {label:"VOCABULARY",    data:vocabArr,   color:P.gold},
           ].map(({label,data,color}) => (
             <div key={label} style={{background:P.deep, borderRadius:12, padding:16, border:`1px solid ${P.border}`}}>
               <div style={{display:"flex", justifyContent:"space-between", marginBottom:8}}>
-                <span style={{fontSize:11, color:P.muted, fontFamily:"Nunito, sans-serif", fontWeight:700, letterSpacing:1}}>{label}</span>
-                <span style={{fontSize:12, color, fontFamily:"Nunito, sans-serif", fontWeight:800}}>
+                <span style={{fontSize:11, color:P.muted, fontFamily: FONT, fontWeight:700, letterSpacing:1}}>{label}</span>
+                <span style={{fontSize:12, color, fontFamily: FONT, fontWeight:800}}>
                   AVG {Math.round(data.reduce((a,b)=>a+b,0)/data.length)}
                 </span>
               </div>
@@ -361,7 +363,7 @@ function Dashboard() {
             </div>
           ))}
         </div>
-        <div style={{fontSize:10, color:P.border, marginTop:12, fontFamily:"Nunito, sans-serif"}}>
+        <div style={{fontSize:10, color:P.border, marginTop:12, fontFamily: FONT}}>
           ← OLDEST · NEWEST → · {scores.length} SESSION{scores.length!==1?"S":""}
         </div>
       </Card>
@@ -373,13 +375,13 @@ function Dashboard() {
               const count = feedbackCounts[k]||0;
               const total = sessions.filter(s=>s.user_feedback).length;
               const pct   = Math.round((count/total)*100)||0;
-              const colors = {good:"#A56ABD", average:P.deep, bad:P.mid, worst:"#49225B"};
+              const colors = {good:P.gold, average:P.deep, bad:P.mid, worst:P.dark};
               return (
                 <div key={k} style={{background:P.deep, borderRadius:12, padding:"14px 20px",
                   textAlign:"center", flex:1, minWidth:80, border:`1px solid ${P.border}`}}>
                   <div style={{fontSize:24}}>{feedbackEmoji[k]}</div>
-                  <div style={{fontSize:22, fontFamily:"Nunito, sans-serif", color:colors[k], fontWeight:800}}>{count}</div>
-                  <div style={{fontSize:10, color:P.muted, textTransform:"uppercase", fontFamily:"Nunito, sans-serif"}}>{k} · {pct}%</div>
+                  <div style={{fontSize:22, fontFamily: FONT, color:colors[k], fontWeight:800}}>{count}</div>
+                  <div style={{fontSize:10, color:P.muted, textTransform:"uppercase", fontFamily: FONT}}>{k} · {pct}%</div>
                 </div>
               );
             })}
@@ -389,7 +391,7 @@ function Dashboard() {
 
       <Card title="🗂 SESSION HISTORY" accent={P.dark}>
         <div style={{overflowX:"auto"}}>
-          <table style={{width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"Nunito, sans-serif"}}>
+          <table style={{width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily: FONT}}>
             <thead>
               <tr style={{borderBottom:`1px solid ${P.border}`}}>
                 {["DATE","SCORE","WPM","FILLERS","ARCHETYPE","TIME","FEEDBACK","TRANSCRIPT"].map(h=>(
@@ -411,7 +413,7 @@ function Dashboard() {
                   </td>
                   <td style={{padding:"10px 12px", color:P.white}}>{s.pace_wpm}</td>
                   <td style={{padding:"10px 12px", color:s.filler_total>5?P.mid:P.muted}}>{s.filler_total}</td>
-                  <td style={{padding:"10px 12px", color:P.pink}}>
+                  <td style={{padding:"10px 12px", color:P.gold}}>
                     {archetypeEmoji[s.voice_archetype]||""} {s.voice_archetype||"—"}
                   </td>
                   <td style={{padding:"10px 12px", color:P.mid, whiteSpace:"nowrap"}}>
@@ -587,7 +589,7 @@ export default function App() {
 
   return (
     <div style={{minHeight:"100vh", background:GRAD_BG, color:P.white,
-      fontFamily:"Nunito, sans-serif", display:"flex"}}>
+      fontFamily: FONT, display:"flex"}}>
 
       {/* ── SIDEBAR ── */}
       <aside style={{
@@ -601,7 +603,7 @@ export default function App() {
         {/* Logo */}
         <div style={{padding:"32px 24px 24px"}}>
           <div style={{
-            fontSize:22, fontWeight:900, fontFamily:"Nunito, sans-serif",
+            fontSize:22, fontWeight:900, fontFamily: FONT,
             background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
             letterSpacing:1, lineHeight:1.2,
           }}>SPEECH<br/>COACH</div>
@@ -622,7 +624,7 @@ export default function App() {
                 background: active ? `linear-gradient(135deg,${P.dark}33,${P.deep}33)` : "transparent",
                 borderLeft: active ? `3px solid ${P.dark}` : "3px solid transparent",
                 color: active ? P.white : P.muted,
-                fontFamily:"Nunito, sans-serif", fontWeight:800, fontSize:12,
+                fontFamily: FONT, fontWeight:800, fontSize:12,
                 letterSpacing:1, marginBottom:4, transition:"all .2s",
                 textAlign:"left",
               }}>
@@ -643,7 +645,7 @@ export default function App() {
           <button onClick={handleLogout} style={{
             width:"100%", background:"transparent", border:`1px solid ${P.border}`,
             borderRadius:10, padding:"9px 0", color:P.muted, fontSize:11,
-            fontWeight:800, letterSpacing:1, cursor:"pointer", fontFamily:"Nunito, sans-serif",
+            fontWeight:800, letterSpacing:1, cursor:"pointer", fontFamily: FONT,
             transition:"all .2s",
           }}
           onMouseEnter={e=>{e.currentTarget.style.color=P.white; e.currentTarget.style.borderColor=P.mid;}}
@@ -684,7 +686,7 @@ export default function App() {
                     <WaveViz stream={stream}/>
                     <div style={{textAlign:"center", marginTop:16}}>
                       <div style={{
-                        fontSize:48, fontFamily:"Nunito, sans-serif", fontWeight:900,
+                        fontSize:48, fontFamily: FONT, fontWeight:900,
                         background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
                         letterSpacing:4,
                       }}>{fmt(elapsed)}</div>
@@ -735,7 +737,7 @@ export default function App() {
                     </>
                   )}
                   {phase==="recording" && (
-                    <GradBtn onClick={stopRecording} grad={`linear-gradient(135deg,#49225B,${P.mid})`}>
+                      <GradBtn onClick={stopRecording} grad={`linear-gradient(135deg,${P.deep},${P.gold})`}>
                       ■ STOP RECORDING
                     </GradBtn>
                   )}
@@ -763,8 +765,8 @@ export default function App() {
             )}
 
             {error && (
-              <div style={{background:"#2A1038", border:`1px solid ${P.mid}`, borderRadius:14,
-                padding:16, marginBottom:20, color:"#E7DBEF", fontSize:13, fontWeight:700, letterSpacing:.5}}>
+              <div style={{background:P.deep, border:`1px solid ${P.mid}`, borderRadius:14,
+                padding:16, marginBottom:20, color:P.light, fontSize:13, fontWeight:700, letterSpacing:.5}}>
                 ⚠️ {error}
               </div>
             )}
@@ -810,7 +812,7 @@ export default function App() {
                     <div>
                       <div style={{fontSize:11, color:P.muted, marginBottom:8, letterSpacing:1}}>ISSUES FOUND:</div>
                       {a.grammar.issues.map((i,idx)=>(
-                        <div key={idx} style={{fontSize:12, color:"#E7DBEF", padding:"5px 0",
+                        <div key={idx} style={{fontSize:12, color:P.light, padding:"5px 0",
                           borderBottom:`1px solid ${P.border}`}}>▸ {i}</div>
                       ))}
                     </div>
@@ -818,7 +820,7 @@ export default function App() {
                 </Card>
 
                 <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20}}>
-                  <Card title="🗣 PRONUNCIATION" accent="#A56ABD">
+                  <Card title="🗣 PRONUNCIATION" accent={P.gold}>
                     <Bar label="PRONUNCIATION" score={a.pronunciation?.score??0}/>
                     <p style={{fontSize:12, color:P.muted, lineHeight:1.6, margin:"8px 0 4px"}}>{a.pronunciation?.notes}</p>
                     <p style={{fontSize:11, color:P.border, margin:0}}>💡 {a.pronunciation?.tip}</p>
@@ -850,8 +852,8 @@ export default function App() {
                           {a.voice_archetype.type?.toUpperCase()}
                         </div>
                         <p style={{fontSize:13, color:P.muted, lineHeight:1.6, margin:"0 0 12px"}}>{a.voice_archetype.description}</p>
-                        <div style={{fontSize:10, color:"#A56ABD", marginBottom:4, letterSpacing:2}}>STRENGTHS</div>
-                        {a.voice_archetype.strengths?.map((s,i)=><div key={i} style={{fontSize:12, color:"#A56ABD"}}>✓ {s}</div>)}
+                        <div style={{fontSize:10, color:P.gold, marginBottom:4, letterSpacing:2}}>STRENGTHS</div>
+                        {a.voice_archetype.strengths?.map((s,i)=><div key={i} style={{fontSize:12, color:P.gold}}>✓ {s}</div>)}
                         <div style={{fontSize:10, color:P.mid, marginBottom:4, marginTop:10, letterSpacing:2}}>GROWTH AREAS</div>
                         {a.voice_archetype.growth_areas?.map((s,i)=><div key={i} style={{fontSize:12, color:P.mid}}>→ {s}</div>)}
                       </div>
@@ -860,9 +862,9 @@ export default function App() {
                 )}
 
                 <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20}}>
-                  <Card title="⭐ TOP STRENGTHS" accent="#A56ABD">
+                  <Card title="⭐ TOP STRENGTHS" accent={P.gold}>
                     {a.top_strengths?.map((s,i)=>(
-                      <div key={i} style={{fontSize:13, color:"#A56ABD", padding:"6px 0",
+                      <div key={i} style={{fontSize:13, color:P.gold, padding:"6px 0",
                         borderBottom:`1px solid ${P.border}`}}>✓ {s}</div>
                     ))}
                   </Card>
@@ -899,8 +901,7 @@ export default function App() {
       </main>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+                @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         * { box-sizing:border-box; }
         audio { accent-color:${P.dark}; }
         .sidebar { transform: translateX(0) !important; }
