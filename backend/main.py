@@ -1,6 +1,6 @@
 """
 Speech Assessment API
-Groq Cloud (Whisper + Llama 3) — fully cloud hosted, no local models needed
+Groq Cloud (Whisper + Llama 3) + JWT/bcrypt Auth
 """
 
 import os
@@ -10,13 +10,65 @@ import time
 import tempfile
 import traceback
 from pathlib import Path
+from datetime import datetime, timedelta
 
 import psutil
 from groq import Groq
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, EmailStr
 import uvicorn
+
+# ── Auth libs ─────────────────────────────────────────────────────────────────
+try:
+    import bcrypt
+except ImportError:
+    raise RuntimeError("bcrypt not installed — add to requirements.txt")
+
+try:
+    from jose import JWTError, jwt
+except ImportError:
+    raise RuntimeError("python-jose not installed — add to requirements.txt")
+
+# ── Supabase (used as plain Postgres client via REST) ─────────────────────────
+try:
+    from supabase import create_client, Client
+except ImportError:
+    raise RuntimeError("supabase not installed — add to requirements.txt")
+
+def get_supabase() -> Client:
+    url  = os.environ.get("SUPABASE_URL")
+    key  = os.environ.get("SUPABASE_SERVICE_KEY")  # service role key (bypasses RLS)
+    if not url or not key:
+        raise HTTPException(500, "SUPABASE_URL or SUPABASE_SERVICE_KEY not set")
+    return create_client(url, key)
+
+# ── JWT config ────────────────────────────────────────────────────────────────
+JWT_SECRET    = os.environ.get("JWT_SECRET", "change-this-in-production-please")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_HOURS = 72  # token valid for 3 days
+
+def create_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRE_HOURS),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def verify_token(token: str) -> dict:
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except JWTError:
+        raise HTTPException(401, "Invalid or expired token")
+
+# ── Auth dependency ───────────────────────────────────────────────────────────
+bearer = HTTPBearer()
+
+def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
+    return verify_token(creds.credentials)
 
 # ── Groq client ───────────────────────────────────────────────────────────────
 def get_groq():
@@ -26,7 +78,7 @@ def get_groq():
     return Groq(api_key=key)
 
 # ── App ───────────────────────────────────────────────────────────────────────
-app = FastAPI(title="Speech Coach — Groq Cloud")
+app = FastAPI(title="Speech Coach — Groq Cloud + JWT Auth")
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +86,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Request schemas ───────────────────────────────────────────────────────────
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 # ── Local helpers ─────────────────────────────────────────────────────────────
 FILLER_WORDS = [
@@ -89,13 +150,11 @@ Return this exact JSON structure with all fields filled:
   "summary": "<3-4 sentence coaching summary>"
 }}"""
 
-# ── System metrics helper ─────────────────────────────────────────────────────
 def get_system_metrics() -> dict:
-    """Snapshot current process RAM and system CPU usage."""
     process = psutil.Process(os.getpid())
-    ram_mb = process.memory_info().rss / (1024 * 1024)          # process RSS in MB
-    system_ram_mb = psutil.virtual_memory().used / (1024 * 1024) # total system RAM used in MB
-    cpu_percent = psutil.cpu_percent(interval=0.1)               # system CPU % (0.1s sample)
+    ram_mb = process.memory_info().rss / (1024 * 1024)
+    system_ram_mb = psutil.virtual_memory().used / (1024 * 1024)
+    cpu_percent = psutil.cpu_percent(interval=0.1)
     return {
         "process_ram_mb": round(ram_mb, 1),
         "system_ram_used_mb": round(system_ram_mb, 1),
@@ -104,21 +163,72 @@ def get_system_metrics() -> dict:
         "note": "CPU-only server (no GPU on Render free tier)",
     }
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── Auth routes ───────────────────────────────────────────────────────────────
+@app.post("/signup")
+async def signup(req: SignupRequest):
+    sb = get_supabase()
+
+    # Check if email already exists
+    existing = sb.table("users").select("id").eq("email", req.email.lower()).execute()
+    if existing.data:
+        raise HTTPException(400, "EMAIL ALREADY REGISTERED")
+
+    # Hash password
+    pw_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
+
+    # Insert user
+    result = sb.table("users").insert({
+        "email": req.email.lower(),
+        "password_hash": pw_hash,
+    }).execute()
+
+    user = result.data[0]
+    token = create_token(user["id"], user["email"])
+
+    return {"token": token, "user": {"id": user["id"], "email": user["email"]}}
+
+
+@app.post("/login")
+async def login(req: LoginRequest):
+    sb = get_supabase()
+
+    # Fetch user
+    result = sb.table("users").select("*").eq("email", req.email.lower()).execute()
+    if not result.data:
+        raise HTTPException(401, "INVALID EMAIL OR PASSWORD")
+
+    user = result.data[0]
+
+    # Verify password
+    if not bcrypt.checkpw(req.password.encode(), user["password_hash"].encode()):
+        raise HTTPException(401, "INVALID EMAIL OR PASSWORD")
+
+    token = create_token(user["id"], user["email"])
+    return {"token": token, "user": {"id": user["id"], "email": user["email"]}}
+
+
+@app.get("/me")
+async def me(current_user: dict = Depends(get_current_user)):
+    return {"user": {"id": current_user["sub"], "email": current_user["email"]}}
+
+
+# ── Health ────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
-    return {"status": "ok", "backend": "groq"}
+    return {"status": "ok", "backend": "groq", "auth": "jwt+bcrypt"}
 
+
+# ── Main protected route ──────────────────────────────────────────────────────
 @app.post("/transcribe-and-assess")
-async def transcribe_and_assess(audio: UploadFile = File(...)):
+async def transcribe_and_assess(
+    audio: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),   # ← JWT required
+):
     tmp_path = None
-
-    # ── Start timing + capture baseline metrics ────────────────────────────
     analysis_start = time.time()
     metrics_before = get_system_metrics()
 
     try:
-        # Save audio to temp file
         suffix = Path(audio.filename).suffix if audio.filename else ".webm"
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(await audio.read())
@@ -127,7 +237,7 @@ async def transcribe_and_assess(audio: UploadFile = File(...)):
 
         client = get_groq()
 
-        # 1. Transcribe with Groq Whisper
+        # 1. Transcribe
         print("Transcribing with Groq Whisper...")
         whisper_start = time.time()
         with open(tmp_path, "rb") as f:
@@ -140,15 +250,13 @@ async def transcribe_and_assess(audio: UploadFile = File(...)):
 
         transcript = transcription.text.strip()
         duration = getattr(transcription, "duration", None) or max(os.path.getsize(tmp_path) / 32000, 1)
-        print(f"Transcript: {transcript[:100]}...")
-        print(f"Duration: {duration}s | Whisper took: {whisper_ms}ms")
+        print(f"Transcript: {transcript[:100]}... | Whisper: {whisper_ms}ms")
 
         # 2. Local metrics
         pace    = estimate_pace(transcript, duration)
         fillers = count_fillers(transcript)
-        print(f"Pace: {pace['wpm']} WPM, Fillers: {fillers}")
 
-        # 3. Groq LLM analysis
+        # 3. LLM analysis
         print("Analysing with Groq LLM...")
         llm_start = time.time()
         response = client.chat.completions.create(
@@ -160,14 +268,9 @@ async def transcribe_and_assess(audio: UploadFile = File(...)):
         llm_ms = round((time.time() - llm_start) * 1000)
 
         raw = response.choices[0].message.content.strip()
-        print(f"LLM response (first 200): {raw[:200]}")
-        print(f"LLM took: {llm_ms}ms")
-
-        # Strip markdown fences
         raw = re.sub(r"^```[a-z]*\n?", "", raw)
         raw = re.sub(r"\n?```$", "", raw)
 
-        # Extract JSON
         match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not match:
             raise HTTPException(500, f"LLM did not return JSON: {raw[:300]}")
@@ -187,12 +290,9 @@ async def transcribe_and_assess(audio: UploadFile = File(...)):
                 except Exception:
                     raise HTTPException(500, f"Could not parse JSON: {json_str[:300]}")
 
-        # ── Final timing + metrics ─────────────────────────────────────────
         total_ms = round((time.time() - analysis_start) * 1000)
         metrics_after = get_system_metrics()
-
-        print(f"Total analysis time: {total_ms}ms")
-        print("Analysis complete!")
+        print(f"Total: {total_ms}ms | User: {current_user['email']}")
 
         return JSONResponse({
             "transcript": transcript,
@@ -204,7 +304,6 @@ async def transcribe_and_assess(audio: UploadFile = File(...)):
                 "score": max(0, 100 - sum(fillers.values()) * 5),
             },
             "analysis": analysis,
-            # ── New observability fields ───────────────────────────────────
             "performance": {
                 "total_ms": total_ms,
                 "whisper_ms": whisper_ms,
@@ -224,9 +323,7 @@ async def transcribe_and_assess(audio: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"\n=== ERROR ===")
         traceback.print_exc()
-        print(f"=============\n")
         raise HTTPException(500, str(e))
     finally:
         if tmp_path and os.path.exists(tmp_path):
