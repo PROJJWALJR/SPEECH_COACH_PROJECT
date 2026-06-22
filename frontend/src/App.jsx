@@ -209,11 +209,11 @@ function PerfMetrics({ performance, system_metrics }) {
         {[
           {label:"TOTAL TIME", value:fmt(total_ms),   color:P.gold},
           {label:"WHISPER",    value:fmt(whisper_ms), color:P.gold},
-          {label:"LLM",        value:fmt(llm_ms),     color:P.mid},
+          {label:"LLM",        value:fmt(llm_ms),     color:P.gold},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.deep, borderRadius:12, padding:"14px 16px", textAlign:"center", border:`1px solid ${P.border}`}}>
             <div style={{fontSize:22, fontFamily: FONT, color, fontWeight:800}}>{value}</div>
-            <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
+            <div style={{fontSize:10, color:P.light, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
           </div>
         ))}
       </div>
@@ -232,8 +232,8 @@ function PerfMetrics({ performance, system_metrics }) {
             justifyContent:"center", fontSize:10, color:P.muted, fontFamily: FONT}}>OTHER</div>
         </div>
         <div style={{display:"flex", gap:16, marginTop:6}}>
-          <span style={{fontSize:11, color:P.deep, fontFamily: FONT}}>■ WHISPER</span>
-          <span style={{fontSize:11, color:P.mid, fontFamily: FONT}}>■ LLM</span>
+          <span style={{fontSize:11, color:P.gold, fontFamily: FONT}}>■ WHISPER</span>
+          <span style={{fontSize:11, color:P.light, fontFamily: FONT}}>■ LLM</span>
         </div>
       </div>
       {ram && (
@@ -334,12 +334,12 @@ function Dashboard() {
           {label:"SESSIONS",      value:sessions.length,        color:P.gold},
           {label:"AVG SCORE",     value:avg("overall_score"),   color:scoreColor(avg("overall_score"))},
           {label:"BEST SCORE",    value:best,                   color:P.gold},
-          {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.mid},
+          {label:"AVG ANALYSIS",  value:avgTime>=1000?`${(avgTime/1000).toFixed(1)}s`:`${avgTime}ms`, color:P.gold},
         ].map(({label,value,color}) => (
           <div key={label} style={{background:P.card, border:`1px solid ${P.border}`,
             borderRadius:14, padding:16, textAlign:"center"}}>
             <div style={{fontSize:26, fontFamily: FONT, color, fontWeight:800}}>{value}</div>
-            <div style={{fontSize:10, color:P.muted, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
+            <div style={{fontSize:10, color:P.light, marginTop:4, textTransform:"uppercase", letterSpacing:1, fontFamily: FONT}}>{label}</div>
           </div>
         ))}
       </div>
@@ -347,14 +347,14 @@ function Dashboard() {
       <Card title="📈 SCORE TRENDS" accent={P.deep}>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20}}>
           {[
-            {label:"OVERALL SCORE", data:scores,     color:P.dark},
-            {label:"GRAMMAR",       data:grammarArr, color:P.deep},
-            {label:"CONFIDENCE",    data:confArr,    color:P.mid},
+            {label:"OVERALL SCORE", data:scores,     color:P.gold},
+            {label:"GRAMMAR",       data:grammarArr, color:P.light},
+            {label:"CONFIDENCE",    data:confArr,    color:P.gold},
             {label:"VOCABULARY",    data:vocabArr,   color:P.gold},
           ].map(({label,data,color}) => (
             <div key={label} style={{background:P.deep, borderRadius:12, padding:16, border:`1px solid ${P.border}`}}>
               <div style={{display:"flex", justifyContent:"space-between", marginBottom:8}}>
-                <span style={{fontSize:11, color:P.muted, fontFamily: FONT, fontWeight:700, letterSpacing:1}}>{label}</span>
+                <span style={{fontSize:11, color:P.light, fontFamily: FONT, fontWeight:700, letterSpacing:1}}>{label}</span>
                 <span style={{fontSize:12, color, fontFamily: FONT, fontWeight:800}}>
                   AVG {Math.round(data.reduce((a,b)=>a+b,0)/data.length)}
                 </span>
@@ -416,7 +416,7 @@ function Dashboard() {
                   <td style={{padding:"10px 12px", color:P.gold}}>
                     {archetypeEmoji[s.voice_archetype]||""} {s.voice_archetype||"—"}
                   </td>
-                  <td style={{padding:"10px 12px", color:P.mid, whiteSpace:"nowrap"}}>
+                  <td style={{padding:"10px 12px", color:P.light, whiteSpace:"nowrap"}}>
                     {s.analysis_total_ms>=1000?`${(s.analysis_total_ms/1000).toFixed(1)}s`:`${s.analysis_total_ms}ms`}
                   </td>
                   <td style={{padding:"10px 12px"}}>
@@ -854,8 +854,8 @@ export default function App() {
                         <p style={{fontSize:13, color:P.muted, lineHeight:1.6, margin:"0 0 12px"}}>{a.voice_archetype.description}</p>
                         <div style={{fontSize:10, color:P.gold, marginBottom:4, letterSpacing:2}}>STRENGTHS</div>
                         {a.voice_archetype.strengths?.map((s,i)=><div key={i} style={{fontSize:12, color:P.gold}}>✓ {s}</div>)}
-                        <div style={{fontSize:10, color:P.mid, marginBottom:4, marginTop:10, letterSpacing:2}}>GROWTH AREAS</div>
-                        {a.voice_archetype.growth_areas?.map((s,i)=><div key={i} style={{fontSize:12, color:P.mid}}>→ {s}</div>)}
+                        <div style={{fontSize:10, color:P.light, marginBottom:4, marginTop:10, letterSpacing:2}}>GROWTH AREAS</div>
+                        {a.voice_archetype.growth_areas?.map((s,i)=><div key={i} style={{fontSize:12, color:P.light}}>→ {s}</div>)}
                       </div>
                     </div>
                   </Card>
